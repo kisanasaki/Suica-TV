@@ -1,0 +1,523 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A00000000000000000000101 /* SuicaRemoteApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000201 /* SuicaRemoteApp.swift */; };
+		A00000000000000000000102 /* RemoteCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000202 /* RemoteCommand.swift */; };
+		A00000000000000000000103 /* ServerMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000203 /* ServerMessage.swift */; };
+		A00000000000000000000104 /* ConnectionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000204 /* ConnectionState.swift */; };
+		A00000000000000000000105 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000205 /* AppSettings.swift */; };
+		A00000000000000000000106 /* WebSocketClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000206 /* WebSocketClient.swift */; };
+		A00000000000000000000107 /* PairingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000207 /* PairingService.swift */; };
+		A00000000000000000000108 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000208 /* KeychainStore.swift */; };
+		A00000000000000000000109 /* ReconnectPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000209 /* ReconnectPolicy.swift */; };
+		A0000000000000000000010A /* RemoteViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000020A /* RemoteViewModel.swift */; };
+		A0000000000000000000010B /* ConnectionStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000020B /* ConnectionStatusView.swift */; };
+		A0000000000000000000010C /* DirectionPad.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000020C /* DirectionPad.swift */; };
+		A0000000000000000000010D /* RemoteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000020D /* RemoteView.swift */; };
+		A0000000000000000000010E /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000020E /* SettingsView.swift */; };
+		A0000000000000000000010F /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000020F /* Localizable.xcstrings */; };
+		A00000000000000000000110 /* ModelContractTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000210 /* ModelContractTests.swift */; };
+		A00000000000000000000111 /* SettingsAndPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000211 /* SettingsAndPolicyTests.swift */; };
+		A00000000000000000000112 /* RemoteViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000212 /* RemoteViewModelTests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		A00000000000000000000301 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A00000000000000000000401 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A00000000000000000000501;
+			remoteInfo = SuicaRemote;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		A00000000000000000000201 /* SuicaRemoteApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuicaRemoteApp.swift; sourceTree = "<group>"; };
+		A00000000000000000000202 /* RemoteCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteCommand.swift; sourceTree = "<group>"; };
+		A00000000000000000000203 /* ServerMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerMessage.swift; sourceTree = "<group>"; };
+		A00000000000000000000204 /* ConnectionState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionState.swift; sourceTree = "<group>"; };
+		A00000000000000000000205 /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
+		A00000000000000000000206 /* WebSocketClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSocketClient.swift; sourceTree = "<group>"; };
+		A00000000000000000000207 /* PairingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairingService.swift; sourceTree = "<group>"; };
+		A00000000000000000000208 /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
+		A00000000000000000000209 /* ReconnectPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReconnectPolicy.swift; sourceTree = "<group>"; };
+		A0000000000000000000020A /* RemoteViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteViewModel.swift; sourceTree = "<group>"; };
+		A0000000000000000000020B /* ConnectionStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionStatusView.swift; sourceTree = "<group>"; };
+		A0000000000000000000020C /* DirectionPad.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DirectionPad.swift; sourceTree = "<group>"; };
+		A0000000000000000000020D /* RemoteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteView.swift; sourceTree = "<group>"; };
+		A0000000000000000000020E /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		A0000000000000000000020F /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		A00000000000000000000210 /* ModelContractTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelContractTests.swift; sourceTree = "<group>"; };
+		A00000000000000000000211 /* SettingsAndPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsAndPolicyTests.swift; sourceTree = "<group>"; };
+		A00000000000000000000212 /* RemoteViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteViewModelTests.swift; sourceTree = "<group>"; };
+		A00000000000000000000213 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A00000000000000000000220 /* SuicaRemote.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SuicaRemote.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A00000000000000000000221 /* SuicaRemoteTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SuicaRemoteTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A00000000000000000000601 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A00000000000000000000602 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A00000000000000000000701 = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000702 /* SuicaRemote */,
+				A0000000000000000000070A /* SuicaRemoteTests */,
+				A0000000000000000000070B /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A00000000000000000000702 /* SuicaRemote */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000703 /* App */,
+				A00000000000000000000704 /* Models */,
+				A00000000000000000000705 /* Configuration */,
+				A00000000000000000000706 /* Services */,
+				A00000000000000000000707 /* ViewModels */,
+				A00000000000000000000708 /* Views */,
+				A00000000000000000000709 /* Resources */,
+			);
+			path = SuicaRemote;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000703 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000201 /* SuicaRemoteApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000704 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000202 /* RemoteCommand.swift */,
+				A00000000000000000000203 /* ServerMessage.swift */,
+				A00000000000000000000204 /* ConnectionState.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000705 /* Configuration */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000205 /* AppSettings.swift */,
+			);
+			path = Configuration;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000706 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000206 /* WebSocketClient.swift */,
+				A00000000000000000000207 /* PairingService.swift */,
+				A00000000000000000000208 /* KeychainStore.swift */,
+				A00000000000000000000209 /* ReconnectPolicy.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000707 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				A0000000000000000000020A /* RemoteViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000708 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				A0000000000000000000020B /* ConnectionStatusView.swift */,
+				A0000000000000000000020C /* DirectionPad.swift */,
+				A0000000000000000000020D /* RemoteView.swift */,
+				A0000000000000000000020E /* SettingsView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000709 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000213 /* Info.plist */,
+				A0000000000000000000020F /* Localizable.xcstrings */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		A0000000000000000000070A /* SuicaRemoteTests */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000210 /* ModelContractTests.swift */,
+				A00000000000000000000211 /* SettingsAndPolicyTests.swift */,
+				A00000000000000000000212 /* RemoteViewModelTests.swift */,
+			);
+			path = SuicaRemoteTests;
+			sourceTree = "<group>";
+		};
+		A0000000000000000000070B /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000220 /* SuicaRemote.app */,
+				A00000000000000000000221 /* SuicaRemoteTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A00000000000000000000501 /* SuicaRemote */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A00000000000000000000902 /* Build configuration list for PBXNativeTarget "SuicaRemote" */;
+			buildPhases = (
+				A00000000000000000000611 /* Sources */,
+				A00000000000000000000601 /* Frameworks */,
+				A00000000000000000000621 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SuicaRemote;
+			productName = SuicaRemote;
+			productReference = A00000000000000000000220 /* SuicaRemote.app */;
+			productType = "com.apple.product-type.application";
+		};
+		A00000000000000000000502 /* SuicaRemoteTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A00000000000000000000903 /* Build configuration list for PBXNativeTarget "SuicaRemoteTests" */;
+			buildPhases = (
+				A00000000000000000000612 /* Sources */,
+				A00000000000000000000602 /* Frameworks */,
+				A00000000000000000000622 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A00000000000000000000801 /* PBXTargetDependency */,
+			);
+			name = SuicaRemoteTests;
+			productName = SuicaRemoteTests;
+			productReference = A00000000000000000000221 /* SuicaRemoteTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A00000000000000000000401 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1510;
+				LastUpgradeCheck = 1510;
+				TargetAttributes = {
+					A00000000000000000000501 = {
+						CreatedOnToolsVersion = 15.1;
+						ProvisioningStyle = Automatic;
+					};
+					A00000000000000000000502 = {
+						CreatedOnToolsVersion = 15.1;
+						ProvisioningStyle = Automatic;
+						TestTargetID = A00000000000000000000501;
+					};
+				};
+			};
+			buildConfigurationList = A00000000000000000000901 /* Build configuration list for PBXProject "SuicaRemote" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = ja;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				ja,
+				Base,
+			);
+			mainGroup = A00000000000000000000701;
+			productRefGroup = A0000000000000000000070B /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A00000000000000000000501 /* SuicaRemote */,
+				A00000000000000000000502 /* SuicaRemoteTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A00000000000000000000621 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A0000000000000000000010F /* Localizable.xcstrings in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A00000000000000000000622 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A00000000000000000000611 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A00000000000000000000101 /* SuicaRemoteApp.swift in Sources */,
+				A00000000000000000000102 /* RemoteCommand.swift in Sources */,
+				A00000000000000000000103 /* ServerMessage.swift in Sources */,
+				A00000000000000000000104 /* ConnectionState.swift in Sources */,
+				A00000000000000000000105 /* AppSettings.swift in Sources */,
+				A00000000000000000000106 /* WebSocketClient.swift in Sources */,
+				A00000000000000000000107 /* PairingService.swift in Sources */,
+				A00000000000000000000108 /* KeychainStore.swift in Sources */,
+				A00000000000000000000109 /* ReconnectPolicy.swift in Sources */,
+				A0000000000000000000010A /* RemoteViewModel.swift in Sources */,
+				A0000000000000000000010B /* ConnectionStatusView.swift in Sources */,
+				A0000000000000000000010C /* DirectionPad.swift in Sources */,
+				A0000000000000000000010D /* RemoteView.swift in Sources */,
+				A0000000000000000000010E /* SettingsView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A00000000000000000000612 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A00000000000000000000110 /* ModelContractTests.swift in Sources */,
+				A00000000000000000000111 /* SettingsAndPolicyTests.swift in Sources */,
+				A00000000000000000000112 /* RemoteViewModelTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A00000000000000000000801 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A00000000000000000000501 /* SuicaRemote */;
+			targetProxy = A00000000000000000000301 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		A00000000000000000000A01 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		A00000000000000000000A02 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		A00000000000000000000A03 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = CY5MRL78H4;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = SuicaRemote/Resources/Info.plist;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kisanasaki.SuicaRemote;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		A00000000000000000000A04 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = CY5MRL78H4;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = SuicaRemote/Resources/Info.plist;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kisanasaki.SuicaRemote;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		A00000000000000000000A05 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kisanasaki.SuicaRemoteTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SuicaRemote.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/SuicaRemote";
+			};
+			name = Debug;
+		};
+		A00000000000000000000A06 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kisanasaki.SuicaRemoteTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SuicaRemote.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/SuicaRemote";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A00000000000000000000901 /* Build configuration list for PBXProject "SuicaRemote" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A00000000000000000000A01 /* Debug */,
+				A00000000000000000000A02 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A00000000000000000000902 /* Build configuration list for PBXNativeTarget "SuicaRemote" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A00000000000000000000A03 /* Debug */,
+				A00000000000000000000A04 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A00000000000000000000903 /* Build configuration list for PBXNativeTarget "SuicaRemoteTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A00000000000000000000A05 /* Debug */,
+				A00000000000000000000A06 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A00000000000000000000401 /* Project object */;
+}

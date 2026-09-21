@@ -1,4 +1,5 @@
 node_modules/
+.DS_Store
 dist/
 target/
 .env
@@ -11,3 +12,7 @@ config/suica-core.toml
 *.tsbuildinfo
 apps/tv/vite.config.js
 apps/tv/vite.config.d.ts
+DerivedData/
+*.xcuserstate
+xcuserdata/
+project.xcworkspace/
