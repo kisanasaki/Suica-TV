@@ -1,0 +1,12 @@
+bind_address = "0.0.0.0"
+port = 3030
+static_dir = "apps/tv/dist"
+home_url = "http://127.0.0.1:3030/"
+chromium_binary = "/usr/bin/chromium"
+profile_dir = "/home/pi/.local/share/suica-tv/chromium-profile"
+pid_file = "/home/pi/.local/share/suica-tv/suica-tv.pid"
+token_store = "/home/pi/.local/share/suica-tv/tokens.json"
+pairing_code = "CHANGE_ME"
+system_backend = "auto"
+command_timeout = 10
+# unclutter_binary = "/usr/bin/unclutter"

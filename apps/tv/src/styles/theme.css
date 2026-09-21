@@ -1,0 +1,18 @@
+:root {
+  --bg-deep: #061614;
+  --bg: #0a2420;
+  --panel: #12342e;
+  --panel-hover: #19463d;
+  --suica-green: #53d88b;
+  --suica-green-bright: #85f2ae;
+  --text: #f5fff9;
+  --text-muted: #a9c8bb;
+  --warning: #ffcf70;
+  --error: #ff8e89;
+  --shadow: rgba(0, 0, 0, 0.42);
+  font-family: Inter, "Noto Sans JP", "Yu Gothic", system-ui, sans-serif;
+  color: var(--text);
+  background: var(--bg-deep);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}

@@ -1,0 +1,13 @@
+node_modules/
+dist/
+target/
+.env
+.env.local
+config/suica-core.toml
+.local-data/
+.chrome-qa/
+*-qa.png
+*-1280x720.png
+*.tsbuildinfo
+apps/tv/vite.config.js
+apps/tv/vite.config.d.ts
