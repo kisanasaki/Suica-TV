@@ -80,6 +80,23 @@ describe('CoreClient', () => {
     client.stop();
   });
 
+  it('restores connected state only after a new hello following a Core restart', () => {
+    const { client, onStatus } = createClient();
+    client.start();
+    sockets[0].open();
+    completeHandshake(sockets[0]);
+    expect(onStatus).toHaveBeenLastCalledWith('connected');
+
+    sockets[0].disconnect();
+    vi.advanceTimersByTime(1_000);
+    sockets[1].open();
+    expect(onStatus).toHaveBeenLastCalledWith('reconnecting');
+
+    completeHandshake(sockets[1]);
+    expect(onStatus).toHaveBeenLastCalledWith('connected');
+    client.stop();
+  });
+
   it('sends a PC mode request and resolves its matching result', async () => {
     const { client } = createClient();
     client.start();

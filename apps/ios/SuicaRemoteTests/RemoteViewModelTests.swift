@@ -42,6 +42,37 @@ actor DelayedWebSocketClient: WebSocketClientProtocol {
     }
 }
 
+actor RecoveringWebSocketClient: WebSocketClientProtocol {
+    private(set) var connectCount = 0
+    private var streamCount = 0
+
+    func connect(configuration: ConnectionConfiguration) async throws {
+        connectCount += 1
+    }
+
+    func disconnect() async { }
+    func send(_ command: RemoteCommand) async throws { }
+
+    func messages() -> AsyncThrowingStream<ServerMessage, Error> {
+        streamCount += 1
+        if streamCount == 1 {
+            return AsyncThrowingStream { continuation in
+                continuation.finish(throwing: RemoteClientError.disconnected)
+            }
+        }
+        return AsyncThrowingStream { continuation in
+            continuation.yield(.hello(
+                protocolVersion: 1,
+                serverVersion: "0.1.0",
+                connectionId: UUID(),
+                role: "remote"
+            ))
+        }
+    }
+
+    func connections() -> Int { connectCount }
+}
+
 final class MemoryKeychain: KeychainStoreProtocol, @unchecked Sendable {
     var token: String?
     init(token: String? = "test-token") { self.token = token }
@@ -162,6 +193,25 @@ final class RemoteViewModelTests: XCTestCase {
 
         let counts = await client.counts()
         XCTAssertEqual(counts.connects, 0)
+    }
+
+    func testReconnectsAfterTransportDisconnectAndAcceptsNewHello() async throws {
+        let client = RecoveringWebSocketClient()
+        let viewModel = RemoteViewModel(
+            webSocket: client,
+            pairingService: UnusedPairingService(),
+            keychain: MemoryKeychain(),
+            settingsStore: FixedSettingsStore(),
+            reconnectPolicy: ReconnectPolicy(delays: [0])
+        )
+
+        viewModel.start()
+        try await Task.sleep(for: .milliseconds(700))
+
+        let connections = await client.connections()
+        XCTAssertEqual(connections, 2)
+        XCTAssertEqual(viewModel.connectionState, .connected)
+        viewModel.stop()
     }
 
     private func makeViewModel(client: FakeWebSocketClient) -> RemoteViewModel {

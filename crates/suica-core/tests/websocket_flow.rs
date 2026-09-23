@@ -165,5 +165,60 @@ async fn remote_commands_reach_tv_and_tv_can_switch_to_pc() {
     assert_eq!(duplicate["requestId"], forbidden_id.to_string());
     assert_eq!(duplicate["error"]["code"], "forbidden_role");
 
+    let home_id = Uuid::new_v4();
+    remote
+        .send(Message::Text(
+            json!({
+                "type": "remote.command",
+                "requestId": home_id,
+                "action": "navigation.home"
+            })
+            .to_string()
+            .into(),
+        ))
+        .await
+        .unwrap();
+    let mut saw_home_state = false;
+    let mut saw_home_result = false;
+    for _ in 0..6 {
+        let message = receive_json(&mut remote).await;
+        saw_home_state |= message["type"] == "system.state"
+            && message["mode"] == "tv"
+            && message["transitioning"] == false;
+        saw_home_result |= message["type"] == "command.result"
+            && message["requestId"] == home_id.to_string()
+            && message["ok"] == true;
+        if saw_home_state && saw_home_result {
+            break;
+        }
+    }
+    assert!(saw_home_state && saw_home_result);
+
+    let (mut replacement_tv, _) = connect_async(&tv_url).await.unwrap();
+    assert_eq!(
+        receive_json(&mut replacement_tv).await["type"],
+        "server.hello"
+    );
+    assert_eq!(receive_json(&mut replacement_tv).await["mode"], "tv");
+    let select_id = Uuid::new_v4();
+    remote
+        .send(Message::Text(
+            json!({
+                "type": "remote.command",
+                "requestId": select_id,
+                "action": "navigation.select"
+            })
+            .to_string()
+            .into(),
+        ))
+        .await
+        .unwrap();
+    let select = receive_json(&mut replacement_tv).await;
+    assert_eq!(select["type"], "remote.command");
+    assert_eq!(select["action"], "navigation.select");
+    let result = receive_json(&mut remote).await;
+    assert_eq!(result["requestId"], select_id.to_string());
+    assert_eq!(result["ok"], true);
+
     server.abort();
 }
