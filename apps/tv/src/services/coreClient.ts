@@ -90,6 +90,7 @@ export class CoreClient {
       const message = parseServerMessage(event.data);
       if (!message) {
         console.warn('Suica Coreから不正または未対応のメッセージを受信しました。');
+        if (!handshakeComplete) socket.close(1002, 'invalid server handshake');
         return;
       }
       if (!handshakeComplete) {

@@ -114,4 +114,18 @@ describe('CoreClient', () => {
     expect(sockets[0].close).toHaveBeenCalledWith(1002, 'invalid server handshake');
     client.stop();
   });
+
+  it('drops an invalid payload after the handshake', () => {
+    const { client, onMessage } = createClient();
+    client.start();
+    sockets[0].open();
+    completeHandshake(sockets[0]);
+    onMessage.mockClear();
+
+    sockets[0].receive({ type: 'remote.command', requestId: 'bad', action: 'navigation.select' });
+
+    expect(onMessage).not.toHaveBeenCalled();
+    expect(sockets[0].close).not.toHaveBeenCalled();
+    client.stop();
+  });
 });
