@@ -23,6 +23,9 @@ final class RemoteViewModel {
     private var shouldReconnect = false
     private var connectedAt: Date?
     private var serverRetryDelay: TimeInterval?
+    private var pendingScrollX = 0
+    private var pendingScrollY = 0
+    private var scrollTask: Task<Void, Never>?
 
     private(set) var connectionState: ConnectionState = .disconnected
     private(set) var displayMode: DisplayMode?
@@ -77,6 +80,10 @@ final class RemoteViewModel {
         connectionTask = nil
         pendingRequests.values.forEach { $0.timeoutTask.cancel() }
         pendingRequests.removeAll()
+        scrollTask?.cancel()
+        scrollTask = nil
+        pendingScrollX = 0
+        pendingScrollY = 0
         connectionState = .disconnected
         Task { await webSocket.disconnect() }
     }
@@ -162,6 +169,33 @@ final class RemoteViewModel {
         guard !pendingRequests.values.contains(where: \.isModeSwitch) else { return }
         let command = RemoteCommand(action: .switchMode, params: CommandParams(mode: mode))
         send(command: command, timeout: 12, isModeSwitch: true)
+    }
+
+    func queueScroll(dx: Int, dy: Int) {
+        guard connectionState.isConnected else { return }
+        pendingScrollX = max(-1200, min(1200, pendingScrollX + dx))
+        pendingScrollY = max(-1200, min(1200, pendingScrollY + dy))
+        guard scrollTask == nil else { return }
+        scrollTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(75))
+            guard !Task.isCancelled else { return }
+            self?.flushScroll()
+        }
+    }
+
+    func flushScroll() {
+        scrollTask?.cancel()
+        scrollTask = nil
+        let dx = pendingScrollX
+        let dy = pendingScrollY
+        pendingScrollX = 0
+        pendingScrollY = 0
+        guard dx != 0 || dy != 0 else { return }
+        send(
+            command: RemoteCommand(action: .scroll, params: CommandParams(dx: dx, dy: dy)),
+            timeout: 5,
+            isModeSwitch: false
+        )
     }
 
     func sendTextInput() {
@@ -306,6 +340,10 @@ final class RemoteViewModel {
         shouldReconnect = true
         pendingRequests.values.forEach { $0.timeoutTask.cancel() }
         pendingRequests.removeAll()
+        scrollTask?.cancel()
+        scrollTask = nil
+        pendingScrollX = 0
+        pendingScrollY = 0
         startConnectionTask(disconnectFirst: true)
     }
 

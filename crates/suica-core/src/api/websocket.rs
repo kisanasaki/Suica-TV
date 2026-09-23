@@ -234,6 +234,10 @@ async fn dispatch(
             broadcast_mode(state).await;
             result.map(|_| ())
         }
+        RemoteAction::Scroll { dx, dy } => {
+            ensure_remote_tv_mode(state, role).await?;
+            state.mode_manager.scroll_browser(*dx, *dy).await
+        }
         RemoteAction::InputText(text) => {
             ensure_remote_tv_mode(state, role).await?;
             state.mode_manager.type_browser_text(text).await

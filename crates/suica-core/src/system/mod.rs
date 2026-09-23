@@ -15,6 +15,9 @@ pub trait SystemBackend: Send + Sync {
     async fn show_home(&self) -> Result<(), CoreError>;
     async fn send_browser_key(&self, key: BrowserKey) -> Result<(), CoreError>;
     async fn type_browser_text(&self, text: &str) -> Result<(), CoreError>;
+    async fn scroll_browser(&self, _dx: i32, _dy: i32) -> Result<(), CoreError> {
+        Ok(())
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -330,6 +333,48 @@ mod linux {
                 }
                 InputBackendKind::Auto | InputBackendKind::Disabled => unreachable!(),
             }
+        }
+        async fn scroll_browser(&self, dx: i32, dy: i32) -> Result<(), CoreError> {
+            let backend = self.resolved_input_backend()?;
+            for (delta, negative_key, positive_key, negative_button, positive_button) in [
+                (dy, "Up", "Down", "4", "5"),
+                (dx, "Left", "Right", "6", "7"),
+            ] {
+                if delta == 0 {
+                    continue;
+                }
+                let steps = delta.unsigned_abs().div_ceil(120).clamp(1, 10);
+                match backend {
+                    InputBackendKind::Wtype => {
+                        let key = if delta < 0 {
+                            negative_key
+                        } else {
+                            positive_key
+                        };
+                        let mut command = Command::new(&self.config.wtype_binary);
+                        for _ in 0..steps {
+                            command.args(["-k", key]);
+                        }
+                        self.run_input(&mut command).await?;
+                    }
+                    InputBackendKind::Xdotool => {
+                        let button = if delta < 0 {
+                            negative_button
+                        } else {
+                            positive_button
+                        };
+                        self.run_input(Command::new(&self.config.xdotool_binary).args([
+                            "click",
+                            "--repeat",
+                            &steps.to_string(),
+                            button,
+                        ]))
+                        .await?;
+                    }
+                    InputBackendKind::Auto | InputBackendKind::Disabled => unreachable!(),
+                }
+            }
+            Ok(())
         }
     }
 }

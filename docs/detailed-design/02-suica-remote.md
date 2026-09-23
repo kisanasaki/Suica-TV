@@ -77,6 +77,7 @@ enum RemoteAction: String, Codable {
     case back = "navigation.back"
     case home = "navigation.home"
     case switchMode = "system.switch_mode"
+    case scroll = "pointer.scroll"
     case inputText = "input.text"
     case deleteBackward = "input.delete_backward"
     case submitText = "input.submit"
@@ -99,6 +100,7 @@ struct RemoteCommand: Encodable {
 | 接続状態 | 現在の`ConnectionState`を文字と色で表示する。 |
 | 上下左右 | 対応する`navigation.*`を1回送信する。 |
 | OK | `navigation.select`を送信する。 |
+| スクロールパッド | ドラッグ量を75ミリ秒単位でまとめ、`pointer.scroll`を送信する。 |
 | 戻る | `navigation.back`を送信する。 |
 | ホーム | `navigation.home`を送信する。PCモード時も有効とする。 |
 | 設定 | SettingsViewをモーダル表示する。 |
@@ -150,6 +152,7 @@ struct RemoteCommand: Encodable {
 | `start()` | 設定を読み、接続を開始する。 |
 | `stop()` | 自動再接続を停止し、Socketを閉じる。 |
 | `sendNavigation(_:)` | 接続確認後に操作命令を送信する。 |
+| `queueScroll(dx:dy:)` | 連続するドラッグ量を集約し、各軸±1200以内で送信する。 |
 | `switchMode(to:)` | 二重送信を防ぎ、切り替え要求を送信する。 |
 | `handle(_:)` | ServerMessageを状態へ反映する。 |
 | `retry()` | 現在の設定で即時再接続する。 |

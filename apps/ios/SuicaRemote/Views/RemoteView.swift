@@ -22,6 +22,12 @@ struct RemoteView: View {
                         viewModel.sendNavigation($0)
                     }
 
+                    ScrollPad(isEnabled: viewModel.connectionState.isConnected) { dx, dy in
+                        viewModel.queueScroll(dx: dx, dy: dy)
+                    } onEnded: {
+                        viewModel.flushScroll()
+                    }
+
                     HStack(spacing: 16) {
                         utilityButton(
                             title: String(localized: "戻る"),
@@ -104,6 +110,50 @@ struct RemoteView: View {
         .buttonStyle(.bordered)
         .accessibilityHint(String(localized: "テレビ画面へ操作を送信します"))
         .accessibilityIdentifier("remote-\(action.rawValue)")
+    }
+}
+
+private struct ScrollPad: View {
+    let isEnabled: Bool
+    let onScroll: (Int, Int) -> Void
+    let onEnded: () -> Void
+    @State private var previousTranslation: CGSize = .zero
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 22)
+            .fill(.secondary.opacity(0.12))
+            .overlay {
+                VStack(spacing: 8) {
+                    Image(systemName: "hand.draw")
+                        .font(.title)
+                    Text(String(localized: "スクロール"))
+                        .font(.headline)
+                    Text(String(localized: "指で上下に動かします"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .frame(maxWidth: .infinity, minHeight: 130)
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 1)
+                    .onChanged { value in
+                        guard isEnabled else { return }
+                        let deltaX = value.translation.width - previousTranslation.width
+                        let deltaY = value.translation.height - previousTranslation.height
+                        previousTranslation = value.translation
+                        onScroll(Int((-deltaX * 3).rounded()), Int((-deltaY * 3).rounded()))
+                    }
+                    .onEnded { _ in
+                        previousTranslation = .zero
+                        guard isEnabled else { return }
+                        onEnded()
+                    }
+            )
+            .opacity(isEnabled ? 1 : 0.45)
+            .accessibilityLabel(String(localized: "YouTubeをスクロール"))
+            .accessibilityHint(String(localized: "指で上下に動かしてテレビ画面をスクロールします"))
+            .accessibilityIdentifier("scroll-pad")
     }
 }
 

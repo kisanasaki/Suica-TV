@@ -85,6 +85,7 @@ Upgrade成功後、Coreは最初のメッセージとして`server.hello`、続�
 | `navigation.back` | なし | 可 | 不可 |
 | `navigation.home` | なし | 可 | 不可 |
 | `system.switch_mode` | `mode` | 可 | PCへの切り替えのみ可 |
+| `pointer.scroll` | `dx`, `dy` | 可 | 不可 |
 | `input.text` | `text` | 可 | 不可 |
 | `input.delete_backward` | なし | 可 | 不可 |
 | `input.submit` | なし | 可 | 不可 |
@@ -107,6 +108,10 @@ TVロールからの`system.switch_mode`は、ループバック接続かつ`par
 `input.text`の`text`は1〜200文字とし、制御文字を拒否する。検索語などの秘密でない入力も
 ログへ出力しない。ReactのTV接続がないTVモードでは、Coreが`navigation.*`をChromiumの
 キーボード操作へ変換する。`input.*`は常にCoreからChromiumへ直接入力する。
+
+`pointer.scroll`の`dx`と`dy`は相対スクロール量で、各軸-1200〜1200とする。両方が0の要求は
+拒否する。iOSは連続操作を75ミリ秒ごとに集約し、Coreは入力バックエンドに応じて安全な
+ホイール操作または方向キー操作へ変換する。
 
 ## 7. CoreからClientへのメッセージ
 

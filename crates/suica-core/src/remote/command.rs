@@ -31,6 +31,7 @@ impl NavigationAction {
 pub enum RemoteAction {
     Navigation(NavigationAction),
     SwitchMode(DisplayMode),
+    Scroll { dx: i32, dy: i32 },
     InputText(String),
     DeleteBackward,
     SubmitText,
@@ -56,6 +57,8 @@ struct CommandDto {
 struct ParamsDto {
     mode: Option<DisplayMode>,
     text: Option<String>,
+    dx: Option<i32>,
+    dy: Option<i32>,
 }
 
 impl RemoteCommand {
@@ -76,6 +79,15 @@ impl RemoteCommand {
                 let params = dto.params.as_ref().ok_or(CoreError::InvalidMessage)?;
                 RemoteAction::SwitchMode(params.mode.ok_or(CoreError::InvalidMessage)?)
             }
+            "pointer.scroll" => {
+                let params = dto.params.as_ref().ok_or(CoreError::InvalidMessage)?;
+                let dx = params.dx.ok_or(CoreError::InvalidMessage)?;
+                let dy = params.dy.ok_or(CoreError::InvalidMessage)?;
+                if (dx == 0 && dy == 0) || dx.unsigned_abs() > 1200 || dy.unsigned_abs() > 1200 {
+                    return Err(CoreError::InvalidMessage);
+                }
+                RemoteAction::Scroll { dx, dy }
+            }
             "input.text" => {
                 let params = dto.params.as_ref().ok_or(CoreError::InvalidMessage)?;
                 let text = params.text.as_ref().ok_or(CoreError::InvalidMessage)?;
@@ -92,14 +104,18 @@ impl RemoteCommand {
             _ => return Err(CoreError::InvalidCommand),
         };
         let params_are_valid = match &action {
-            RemoteAction::SwitchMode(_) => dto
-                .params
-                .as_ref()
-                .is_some_and(|params| params.text.is_none()),
-            RemoteAction::InputText(_) => dto
-                .params
-                .as_ref()
-                .is_some_and(|params| params.mode.is_none()),
+            RemoteAction::SwitchMode(_) => dto.params.as_ref().is_some_and(|params| {
+                params.text.is_none() && params.dx.is_none() && params.dy.is_none()
+            }),
+            RemoteAction::Scroll { .. } => dto.params.as_ref().is_some_and(|params| {
+                params.mode.is_none()
+                    && params.text.is_none()
+                    && params.dx.is_some()
+                    && params.dy.is_some()
+            }),
+            RemoteAction::InputText(_) => dto.params.as_ref().is_some_and(|params| {
+                params.mode.is_none() && params.dx.is_none() && params.dy.is_none()
+            }),
             _ => dto.params.is_none(),
         };
         if !params_are_valid {
@@ -164,5 +180,24 @@ mod tests {
             r#"{"type":"remote.command","requestId":"550e8400-e29b-41d4-a716-446655440000","action":"input.text","params":{"text":""}}"#,
         )
         .is_err());
+    }
+
+    #[test]
+    fn parses_bounded_scroll_and_rejects_invalid_deltas() {
+        let command = RemoteCommand::parse(
+            r#"{"type":"remote.command","requestId":"550e8400-e29b-41d4-a716-446655440000","action":"pointer.scroll","params":{"dx":-240,"dy":360}}"#,
+        )
+        .unwrap();
+        assert_eq!(command.action, RemoteAction::Scroll { dx: -240, dy: 360 });
+        for params in [
+            r#"{"dx":0,"dy":0}"#,
+            r#"{"dx":0,"dy":1201}"#,
+            r#"{"dx":-1201,"dy":0}"#,
+        ] {
+            let message = format!(
+                r#"{{"type":"remote.command","requestId":"550e8400-e29b-41d4-a716-446655440000","action":"pointer.scroll","params":{params}}}"#
+            );
+            assert!(RemoteCommand::parse(&message).is_err());
+        }
     }
 }

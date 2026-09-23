@@ -98,12 +98,17 @@ async fn remote_commands_reach_tv_and_tv_can_switch_to_pc() {
     tokio::time::sleep(Duration::from_millis(25)).await;
     for action in [
         "navigation.down",
+        "pointer.scroll",
         "input.text",
         "input.delete_backward",
         "input.submit",
     ] {
         let request_id = Uuid::new_v4();
-        let params = (action == "input.text").then(|| json!({"text": "日本語🍉"}));
+        let params = match action {
+            "input.text" => Some(json!({"text": "日本語🍉"})),
+            "pointer.scroll" => Some(json!({"dx": 0, "dy": 240})),
+            _ => None,
+        };
         let mut command = json!({
             "type": "remote.command",
             "requestId": request_id,

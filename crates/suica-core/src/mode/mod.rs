@@ -189,6 +189,10 @@ impl ModeManager {
         self.backend.type_browser_text(text).await
     }
 
+    pub async fn scroll_browser(&self, dx: i32, dy: i32) -> Result<(), CoreError> {
+        self.backend.scroll_browser(dx, dy).await
+    }
+
     pub async fn recover_tv_after_crash(&self) -> Result<bool, CoreError> {
         self.recover_tv_after_crash_with_delays(&[
             Duration::ZERO,

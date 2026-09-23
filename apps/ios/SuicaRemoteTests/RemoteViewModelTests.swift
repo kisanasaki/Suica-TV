@@ -159,6 +159,25 @@ final class RemoteViewModelTests: XCTestCase {
         viewModel.stop()
     }
 
+    func testCoalescesAndBoundsContinuousScrollInput() async throws {
+        let client = FakeWebSocketClient()
+        let viewModel = makeViewModel(client: client)
+        viewModel.start()
+        await Task.yield()
+        await client.emit(.hello(protocolVersion: 1, serverVersion: "0.1.0", connectionId: UUID(), role: "remote"))
+        for _ in 0..<5 { await Task.yield() }
+
+        viewModel.queueScroll(dx: 900, dy: -800)
+        viewModel.queueScroll(dx: 900, dy: -800)
+        try await Task.sleep(for: .milliseconds(100))
+
+        let commands = await client.sentCommands
+        XCTAssertEqual(commands.count, 1)
+        XCTAssertEqual(commands.last?.action, .scroll)
+        XCTAssertEqual(commands.last?.params, CommandParams(dx: 1200, dy: -1200))
+        viewModel.stop()
+    }
+
     func testRapidReconnectRequestsCreateOnlyLatestConnectionLoop() async throws {
         let client = DelayedWebSocketClient()
         let viewModel = RemoteViewModel(
