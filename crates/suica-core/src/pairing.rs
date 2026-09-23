@@ -41,12 +41,15 @@ impl TokenStore {
         rand::rng().fill_bytes(&mut bytes);
         let token = URL_SAFE_NO_PAD.encode(bytes);
         let id = Uuid::new_v4();
-        self.records.write().await.push(TokenRecord {
+        let mut records = self.records.write().await;
+        let mut updated = records.clone();
+        updated.push(TokenRecord {
             device_id: id,
             device_name,
             token_hash: hash(&token),
         });
-        self.persist().await?;
+        self.persist(&updated).await?;
+        *records = updated;
         Ok((id, token))
     }
     pub async fn verify(&self, token: &str) -> bool {
@@ -57,11 +60,11 @@ impl TokenStore {
             .iter()
             .any(|r| bool::from(r.token_hash.as_bytes().ct_eq(wanted.as_bytes())))
     }
-    async fn persist(&self) -> Result<(), CoreError> {
+    async fn persist(&self, records: &[TokenRecord]) -> Result<(), CoreError> {
         if let Some(parent) = self.path.parent() {
             tokio::fs::create_dir_all(parent).await?;
         }
-        let data = serde_json::to_vec_pretty(&*self.records.read().await)?;
+        let data = serde_json::to_vec_pretty(records)?;
         let tmp = self.path.with_extension("tmp");
         tokio::fs::write(&tmp, data).await?;
         #[cfg(unix)]
@@ -108,6 +111,7 @@ pub fn valid_pairing_code(expected: &str, provided: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Arc;
     #[tokio::test]
     async fn tokens_survive_reload() {
         let d = tempfile::tempdir().unwrap();
@@ -127,6 +131,40 @@ mod tests {
         let stored = tokio::fs::read_to_string(p).await.unwrap();
         assert!(!stored.contains(&token));
         assert!(stored.contains("tokenHash"));
+    }
+    #[tokio::test]
+    async fn concurrent_issues_are_all_persisted() {
+        let d = tempfile::tempdir().unwrap();
+        let p = d.path().join("tokens.json");
+        let store = Arc::new(TokenStore::load(p.clone()).await.unwrap());
+        let mut tasks = Vec::new();
+        for index in 0..16 {
+            let store = store.clone();
+            tasks.push(tokio::spawn(async move {
+                store.issue(format!("phone-{index}")).await.unwrap().1
+            }));
+        }
+        let mut tokens = Vec::new();
+        for task in tasks {
+            tokens.push(task.await.unwrap());
+        }
+
+        let reloaded = TokenStore::load(p).await.unwrap();
+        for token in tokens {
+            assert!(reloaded.verify(&token).await);
+        }
+    }
+    #[tokio::test]
+    async fn failed_persist_does_not_publish_record_in_memory() {
+        let d = tempfile::tempdir().unwrap();
+        let parent_file = d.path().join("not-a-directory");
+        tokio::fs::write(&parent_file, b"occupied").await.unwrap();
+        let store = TokenStore::load(parent_file.join("tokens.json"))
+            .await
+            .unwrap();
+
+        assert!(store.issue("phone".into()).await.is_err());
+        assert!(store.records.read().await.is_empty());
     }
     #[tokio::test]
     async fn failure_limiter_stops_at_ten_attempts() {
