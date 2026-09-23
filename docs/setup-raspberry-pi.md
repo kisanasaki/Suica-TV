@@ -19,7 +19,7 @@ Suica Coreはユーザーサービスとして動く。デスクトップへ自�
 ```bash
 sudo apt update
 sudo apt full-upgrade -y
-sudo apt install -y git curl build-essential pkg-config nodejs npm chromium wtype xdotool
+sudo apt install -y git curl build-essential pkg-config nodejs npm chromium wtype xdotool ydotool
 ```
 
 必要ならカーソルを隠すために`unclutter`を追加する。
@@ -108,6 +108,7 @@ system_backend = "auto"
 input_backend = "auto"
 wtype_binary = "/usr/bin/wtype"
 xdotool_binary = "/usr/bin/xdotool"
+ydotool_binary = "/usr/bin/ydotool"
 ```
 
 `CHANGE_ME`のままではCoreは起動しない。設定値は環境変数でも上書きできる。例: `SUICA_CORE_PAIRING_CODE=123456`。コード、発行済みトークン、AuthorizationヘッダーをログやGitへ残さない。
@@ -217,8 +218,13 @@ CoreはWaylandでは`wtype`、X11では`xdotool`を使い、Reactが外部ペー
 ```bash
 command -v wtype
 command -v xdotool
+command -v ydotool
 systemctl --user show-environment | grep -E 'WAYLAND_DISPLAY|DISPLAY|XDG_RUNTIME_DIR'
 ```
+
+Waylandでポインター操作を使う場合は、`ydotoold`が起動しており、Coreの実行ユーザーが
+そのソケットへ接続できることも確認する。権限は必要なソケットと`/dev/uinput`だけに限定し、
+Core自体をrootで実行しない。
 
 画面セッションの環境変数が表示されない場合は、そのセッション内で次を実行してCoreを再起動する。
 

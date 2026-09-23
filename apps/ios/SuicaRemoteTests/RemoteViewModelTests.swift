@@ -128,6 +128,7 @@ final class RemoteViewModelTests: XCTestCase {
         viewModel.start()
         await Task.yield()
         await client.emit(.hello(protocolVersion: 1, serverVersion: "0.1.0", connectionId: UUID(), role: "remote"))
+        await client.emit(.systemState(mode: .tv, transitioning: false, targetMode: nil, changedAt: Date()))
         for _ in 0..<5 { await Task.yield() }
 
         viewModel.textInput = "日本語🍉"
@@ -165,6 +166,7 @@ final class RemoteViewModelTests: XCTestCase {
         viewModel.start()
         await Task.yield()
         await client.emit(.hello(protocolVersion: 1, serverVersion: "0.1.0", connectionId: UUID(), role: "remote"))
+        await client.emit(.systemState(mode: .tv, transitioning: false, targetMode: nil, changedAt: Date()))
         for _ in 0..<5 { await Task.yield() }
 
         viewModel.queueScroll(dx: 900, dy: -800)
@@ -175,6 +177,34 @@ final class RemoteViewModelTests: XCTestCase {
         XCTAssertEqual(commands.count, 1)
         XCTAssertEqual(commands.last?.action, .scroll)
         XCTAssertEqual(commands.last?.params, CommandParams(dx: 1200, dy: -1200))
+        viewModel.stop()
+    }
+
+    func testPointerMovementIsCoalescedAndClickRequiresStableTVMode() async throws {
+        let client = FakeWebSocketClient()
+        let viewModel = makeViewModel(client: client)
+        viewModel.start()
+        await Task.yield()
+        await client.emit(.hello(protocolVersion: 1, serverVersion: "0.1.0", connectionId: UUID(), role: "remote"))
+        await client.emit(.systemState(mode: .tv, transitioning: false, targetMode: nil, changedAt: Date()))
+        for _ in 0..<5 { await Task.yield() }
+
+        viewModel.queuePointerMove(dx: 10, dy: -4)
+        viewModel.queuePointerMove(dx: 6, dy: 3)
+        viewModel.clickPointer()
+        try await Task.sleep(for: .milliseconds(75))
+
+        var commands = await client.sentCommands
+        XCTAssertEqual(commands.count, 2)
+        XCTAssertEqual(commands[0].action, .pointerClick)
+        XCTAssertEqual(commands[1].params, CommandParams(dx: 16, dy: -1))
+
+        await client.emit(.systemState(mode: .tv, transitioning: true, targetMode: .pc, changedAt: Date()))
+        for _ in 0..<5 { await Task.yield() }
+        viewModel.clickPointer()
+        await Task.yield()
+        commands = await client.sentCommands
+        XCTAssertEqual(commands.count, 2)
         viewModel.stop()
     }
 

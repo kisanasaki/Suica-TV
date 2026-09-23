@@ -86,6 +86,8 @@ Upgrade成功後、Coreは最初のメッセージとして`server.hello`、続�
 | `navigation.home` | なし | 可 | 不可 |
 | `system.switch_mode` | `mode` | 可 | PCへの切り替えのみ可 |
 | `pointer.scroll` | `dx`, `dy` | 可 | 不可 |
+| `pointer.move` | `dx`, `dy` | 可 | 不可 |
+| `pointer.click` | なし | 可 | 不可 |
 | `input.text` | `text` | 可 | 不可 |
 | `input.delete_backward` | なし | 可 | 不可 |
 | `input.submit` | なし | 可 | 不可 |
@@ -116,6 +118,10 @@ TVロールからの`system.switch_mode`は、ループバック接続かつ`par
 `pointer.scroll`の`dx`と`dy`は相対スクロール量で、各軸-1200〜1200とする。両方が0の要求は
 拒否する。iOSは連続操作を75ミリ秒ごとに集約し、Coreは入力バックエンドに応じて安全な
 ホイール操作または方向キー操作へ変換する。
+
+`pointer.move`も各軸-1200〜1200の相対量とし、両方が0の要求を拒否する。`pointer.move`と
+`pointer.click`はTVモードの安定状態でのみ実行し、切断中・PCモード・モード遷移中の操作を
+拒否する。Waylandでは`ydotool`、X11では`xdotool`を使用する。
 
 ## 7. CoreからClientへのメッセージ
 

@@ -78,6 +78,8 @@ enum RemoteAction: String, Codable {
     case home = "navigation.home"
     case switchMode = "system.switch_mode"
     case scroll = "pointer.scroll"
+    case pointerMove = "pointer.move"
+    case pointerClick = "pointer.click"
     case inputText = "input.text"
     case deleteBackward = "input.delete_backward"
     case submitText = "input.submit"
@@ -101,6 +103,8 @@ struct RemoteCommand: Encodable {
 | 上下左右 | 対応する`navigation.*`を1回送信する。 |
 | OK | `navigation.select`を送信する。 |
 | スクロールパッド | ドラッグ量を75ミリ秒単位でまとめ、`pointer.scroll`を送信する。 |
+| ポインターパッド | ドラッグ量を50ミリ秒単位でまとめ、選択した感度を適用して`pointer.move`を送信する。 |
+| クリック | TVモードが安定状態のときだけ`pointer.click`を送信する。 |
 | 戻る | `navigation.back`を送信する。 |
 | ホーム | `navigation.home`を送信する。PCモード時も有効とする。 |
 | 設定 | SettingsViewをモーダル表示する。 |
@@ -153,6 +157,7 @@ struct RemoteCommand: Encodable {
 | `stop()` | 自動再接続を停止し、Socketを閉じる。 |
 | `sendNavigation(_:)` | 接続確認後に操作命令を送信する。 |
 | `queueScroll(dx:dy:)` | 連続するドラッグ量を集約し、各軸±1200以内で送信する。 |
+| `queuePointerMove(dx:dy:)` | 連続する相対移動を集約する。切断・モード遷移時は破棄する。 |
 | `switchMode(to:)` | 二重送信を防ぎ、切り替え要求を送信する。 |
 | `handle(_:)` | ServerMessageを状態へ反映する。 |
 | `retry()` | 現在の設定で即時再接続する。 |

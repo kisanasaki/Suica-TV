@@ -26,6 +26,9 @@ final class RemoteViewModel {
     private var pendingScrollX = 0
     private var pendingScrollY = 0
     private var scrollTask: Task<Void, Never>?
+    private var pendingPointerX = 0
+    private var pendingPointerY = 0
+    private var pointerTask: Task<Void, Never>?
 
     private(set) var connectionState: ConnectionState = .disconnected
     private(set) var displayMode: DisplayMode?
@@ -40,6 +43,9 @@ final class RemoteViewModel {
     var pairingCode = ""
     var textInput = ""
     var isTextInputPresented = false
+    var canUsePointer: Bool {
+        connectionState.isConnected && displayMode == .tv && !isTransitioning
+    }
 
     init(
         webSocket: any WebSocketClientProtocol = WebSocketClient(),
@@ -84,6 +90,10 @@ final class RemoteViewModel {
         scrollTask = nil
         pendingScrollX = 0
         pendingScrollY = 0
+        pointerTask?.cancel()
+        pointerTask = nil
+        pendingPointerX = 0
+        pendingPointerY = 0
         connectionState = .disconnected
         Task { await webSocket.disconnect() }
     }
@@ -172,7 +182,7 @@ final class RemoteViewModel {
     }
 
     func queueScroll(dx: Int, dy: Int) {
-        guard connectionState.isConnected else { return }
+        guard canUsePointer else { return }
         pendingScrollX = max(-1200, min(1200, pendingScrollX + dx))
         pendingScrollY = max(-1200, min(1200, pendingScrollY + dy))
         guard scrollTask == nil else { return }
@@ -190,12 +200,44 @@ final class RemoteViewModel {
         let dy = pendingScrollY
         pendingScrollX = 0
         pendingScrollY = 0
-        guard dx != 0 || dy != 0 else { return }
+        guard canUsePointer, dx != 0 || dy != 0 else { return }
         send(
             command: RemoteCommand(action: .scroll, params: CommandParams(dx: dx, dy: dy)),
             timeout: 5,
             isModeSwitch: false
         )
+    }
+
+    func queuePointerMove(dx: Int, dy: Int) {
+        guard canUsePointer else { return }
+        pendingPointerX = max(-1200, min(1200, pendingPointerX + dx))
+        pendingPointerY = max(-1200, min(1200, pendingPointerY + dy))
+        guard pointerTask == nil else { return }
+        pointerTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(50))
+            guard !Task.isCancelled else { return }
+            self?.flushPointerMove()
+        }
+    }
+
+    func flushPointerMove() {
+        pointerTask?.cancel()
+        pointerTask = nil
+        let dx = pendingPointerX
+        let dy = pendingPointerY
+        pendingPointerX = 0
+        pendingPointerY = 0
+        guard canUsePointer, dx != 0 || dy != 0 else { return }
+        send(
+            command: RemoteCommand(action: .pointerMove, params: CommandParams(dx: dx, dy: dy)),
+            timeout: 5,
+            isModeSwitch: false
+        )
+    }
+
+    func clickPointer() {
+        guard canUsePointer else { return }
+        send(command: RemoteCommand(action: .pointerClick), timeout: 5, isModeSwitch: false)
     }
 
     func sendTextInput() {
@@ -344,6 +386,10 @@ final class RemoteViewModel {
         scrollTask = nil
         pendingScrollX = 0
         pendingScrollY = 0
+        pointerTask?.cancel()
+        pointerTask = nil
+        pendingPointerX = 0
+        pendingPointerY = 0
         startConnectionTask(disconnectFirst: true)
     }
 

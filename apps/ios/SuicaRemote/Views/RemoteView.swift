@@ -4,6 +4,7 @@ import SwiftUI
 struct RemoteView: View {
     @Bindable var viewModel: RemoteViewModel
     @Environment(\.scenePhase) private var scenePhase
+    @State private var pointerSensitivity = 1.0
 
     var body: some View {
         NavigationStack {
@@ -22,10 +23,21 @@ struct RemoteView: View {
                         viewModel.sendNavigation($0)
                     }
 
-                    ScrollPad(isEnabled: viewModel.connectionState.isConnected) { dx, dy in
+                    ScrollPad(isEnabled: viewModel.canUsePointer) { dx, dy in
                         viewModel.queueScroll(dx: dx, dy: dy)
                     } onEnded: {
                         viewModel.flushScroll()
+                    }
+
+                    PointerPad(
+                        isEnabled: viewModel.canUsePointer,
+                        sensitivity: $pointerSensitivity
+                    ) { dx, dy in
+                        viewModel.queuePointerMove(dx: dx, dy: dy)
+                    } onEnded: {
+                        viewModel.flushPointerMove()
+                    } onClick: {
+                        viewModel.clickPointer()
                     }
 
                     HStack(spacing: 16) {
@@ -154,6 +166,73 @@ private struct ScrollPad: View {
             .accessibilityLabel(String(localized: "YouTubeをスクロール"))
             .accessibilityHint(String(localized: "指で上下に動かしてテレビ画面をスクロールします"))
             .accessibilityIdentifier("scroll-pad")
+    }
+}
+
+private struct PointerPad: View {
+    let isEnabled: Bool
+    @Binding var sensitivity: Double
+    let onMove: (Int, Int) -> Void
+    let onEnded: () -> Void
+    let onClick: () -> Void
+    @State private var previousTranslation: CGSize = .zero
+
+    var body: some View {
+        VStack(spacing: 12) {
+            RoundedRectangle(cornerRadius: 22)
+                .fill(.secondary.opacity(0.12))
+                .overlay {
+                    VStack(spacing: 8) {
+                        Image(systemName: "cursorarrow.motionlines")
+                            .font(.title)
+                        Text(String(localized: "ポインター"))
+                            .font(.headline)
+                        Text(String(localized: "指でカーソルを動かします"))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .frame(maxWidth: .infinity, minHeight: 150)
+                .contentShape(Rectangle())
+                .gesture(
+                    DragGesture(minimumDistance: 1)
+                        .onChanged { value in
+                            guard isEnabled else { return }
+                            let deltaX = value.translation.width - previousTranslation.width
+                            let deltaY = value.translation.height - previousTranslation.height
+                            previousTranslation = value.translation
+                            onMove(
+                                Int((deltaX * sensitivity).rounded()),
+                                Int((deltaY * sensitivity).rounded())
+                            )
+                        }
+                        .onEnded { _ in
+                            previousTranslation = .zero
+                            guard isEnabled else { return }
+                            onEnded()
+                        }
+                )
+                .accessibilityIdentifier("pointer-pad")
+
+            HStack {
+                Text(String(localized: "感度"))
+                Slider(value: $sensitivity, in: 0.5...2.0, step: 0.25)
+                    .accessibilityIdentifier("pointer-sensitivity")
+            }
+
+            Button {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                onClick()
+            } label: {
+                Label(String(localized: "クリック"), systemImage: "cursorarrow.click")
+                    .frame(maxWidth: .infinity, minHeight: 44)
+            }
+            .buttonStyle(.bordered)
+            .disabled(!isEnabled)
+            .accessibilityIdentifier("pointer-click")
+        }
+        .opacity(isEnabled ? 1 : 0.45)
+        .accessibilityLabel(String(localized: "テレビ画面のポインター操作"))
     }
 }
 

@@ -38,6 +38,23 @@ final class ModelContractTests: XCTestCase {
         XCTAssertEqual(params, ["dx": -120, "dy": 360])
     }
 
+    func testPointerCommandsMatchContract() throws {
+        let movement = RemoteCommand(action: .pointerMove, params: CommandParams(dx: 12, dy: -8))
+        let movementObject = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: JSONEncoder().encode(movement)) as? [String: Any]
+        )
+        XCTAssertEqual(movementObject["action"] as? String, "pointer.move")
+        XCTAssertEqual(movementObject["params"] as? [String: Int], ["dx": 12, "dy": -8])
+
+        let clickObject = try XCTUnwrap(
+            JSONSerialization.jsonObject(
+                with: JSONEncoder().encode(RemoteCommand(action: .pointerClick))
+            ) as? [String: Any]
+        )
+        XCTAssertEqual(clickObject["action"] as? String, "pointer.click")
+        XCTAssertNil(clickObject["params"])
+    }
+
     func testDecodesAllServerMessagesAndIgnoresAddedFields() throws {
         let decoder = JSONDecoder()
         let hello = try decoder.decode(ServerMessage.self, from: Data(#"{"type":"server.hello","protocolVersion":1,"serverVersion":"0.1.0","connectionId":"550e8400-e29b-41d4-a716-446655440000","role":"remote","future":true}"#.utf8))

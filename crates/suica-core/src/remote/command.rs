@@ -32,6 +32,8 @@ pub enum RemoteAction {
     Navigation(NavigationAction),
     SwitchMode(DisplayMode),
     Scroll { dx: i32, dy: i32 },
+    PointerMove { dx: i32, dy: i32 },
+    PointerClick,
     InputText(String),
     DeleteBackward,
     SubmitText,
@@ -88,6 +90,16 @@ impl RemoteCommand {
                 }
                 RemoteAction::Scroll { dx, dy }
             }
+            "pointer.move" => {
+                let params = dto.params.as_ref().ok_or(CoreError::InvalidMessage)?;
+                let dx = params.dx.ok_or(CoreError::InvalidMessage)?;
+                let dy = params.dy.ok_or(CoreError::InvalidMessage)?;
+                if (dx == 0 && dy == 0) || dx.unsigned_abs() > 1200 || dy.unsigned_abs() > 1200 {
+                    return Err(CoreError::InvalidMessage);
+                }
+                RemoteAction::PointerMove { dx, dy }
+            }
+            "pointer.click" => RemoteAction::PointerClick,
             "input.text" => {
                 let params = dto.params.as_ref().ok_or(CoreError::InvalidMessage)?;
                 let text = params.text.as_ref().ok_or(CoreError::InvalidMessage)?;
@@ -107,12 +119,14 @@ impl RemoteCommand {
             RemoteAction::SwitchMode(_) => dto.params.as_ref().is_some_and(|params| {
                 params.text.is_none() && params.dx.is_none() && params.dy.is_none()
             }),
-            RemoteAction::Scroll { .. } => dto.params.as_ref().is_some_and(|params| {
-                params.mode.is_none()
-                    && params.text.is_none()
-                    && params.dx.is_some()
-                    && params.dy.is_some()
-            }),
+            RemoteAction::Scroll { .. } | RemoteAction::PointerMove { .. } => {
+                dto.params.as_ref().is_some_and(|params| {
+                    params.mode.is_none()
+                        && params.text.is_none()
+                        && params.dx.is_some()
+                        && params.dy.is_some()
+                })
+            }
             RemoteAction::InputText(_) => dto.params.as_ref().is_some_and(|params| {
                 params.mode.is_none() && params.dx.is_none() && params.dy.is_none()
             }),
@@ -199,5 +213,22 @@ mod tests {
             );
             assert!(RemoteCommand::parse(&message).is_err());
         }
+    }
+
+    #[test]
+    fn parses_pointer_move_and_click() {
+        let movement = RemoteCommand::parse(
+            r#"{"type":"remote.command","requestId":"550e8400-e29b-41d4-a716-446655440000","action":"pointer.move","params":{"dx":20,"dy":-15}}"#,
+        )
+        .unwrap();
+        assert_eq!(
+            movement.action,
+            RemoteAction::PointerMove { dx: 20, dy: -15 }
+        );
+        let click = RemoteCommand::parse(
+            r#"{"type":"remote.command","requestId":"550e8400-e29b-41d4-a716-446655440000","action":"pointer.click"}"#,
+        )
+        .unwrap();
+        assert_eq!(click.action, RemoteAction::PointerClick);
     }
 }

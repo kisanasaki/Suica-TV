@@ -18,6 +18,12 @@ pub trait SystemBackend: Send + Sync {
     async fn scroll_browser(&self, _dx: i32, _dy: i32) -> Result<(), CoreError> {
         Ok(())
     }
+    async fn move_pointer(&self, _dx: i32, _dy: i32) -> Result<(), CoreError> {
+        Ok(())
+    }
+    async fn click_pointer(&self) -> Result<(), CoreError> {
+        Ok(())
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -138,6 +144,10 @@ mod linux {
     pub struct LinuxSystemBackend {
         config: Config,
     }
+    enum PointerBackend {
+        Ydotool,
+        Xdotool,
+    }
     impl LinuxSystemBackend {
         pub fn new(config: Config) -> Self {
             Self { config }
@@ -210,6 +220,28 @@ mod linux {
                     "browser input is disabled".into(),
                 )),
                 backend => Ok(backend),
+            }
+        }
+
+        fn resolved_pointer_backend(&self) -> Result<PointerBackend, CoreError> {
+            match self.config.input_backend {
+                InputBackendKind::Auto | InputBackendKind::Wtype
+                    if env::var_os("WAYLAND_DISPLAY").is_some()
+                        && self.config.ydotool_binary.is_file() =>
+                {
+                    Ok(PointerBackend::Ydotool)
+                }
+                InputBackendKind::Auto | InputBackendKind::Xdotool
+                    if env::var_os("DISPLAY").is_some() && self.config.xdotool_binary.is_file() =>
+                {
+                    Ok(PointerBackend::Xdotool)
+                }
+                InputBackendKind::Disabled => Err(CoreError::BrowserInputFailed(
+                    "pointer input is disabled".into(),
+                )),
+                _ => Err(CoreError::BrowserInputFailed(
+                    "no Wayland/X11 pointer helper is available".into(),
+                )),
             }
         }
 
@@ -387,6 +419,45 @@ mod linux {
                 }
             }
             Ok(())
+        }
+        async fn move_pointer(&self, dx: i32, dy: i32) -> Result<(), CoreError> {
+            let x = dx.to_string();
+            let y = dy.to_string();
+            match self.resolved_pointer_backend()? {
+                PointerBackend::Ydotool => {
+                    self.run_input(Command::new(&self.config.ydotool_binary).args([
+                        "mousemove",
+                        "-x",
+                        &x,
+                        "-y",
+                        &y,
+                    ]))
+                    .await
+                }
+                PointerBackend::Xdotool => {
+                    self.run_input(Command::new(&self.config.xdotool_binary).args([
+                        "mousemove_relative",
+                        "--",
+                        &x,
+                        &y,
+                    ]))
+                    .await
+                }
+            }
+        }
+        async fn click_pointer(&self) -> Result<(), CoreError> {
+            match self.resolved_pointer_backend()? {
+                PointerBackend::Ydotool => {
+                    self.run_input(
+                        Command::new(&self.config.ydotool_binary).args(["click", "0xC0"]),
+                    )
+                    .await
+                }
+                PointerBackend::Xdotool => {
+                    self.run_input(Command::new(&self.config.xdotool_binary).args(["click", "1"]))
+                        .await
+                }
+            }
         }
     }
 }

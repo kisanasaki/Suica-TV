@@ -22,6 +22,8 @@ enum RemoteAction: String, Codable, CaseIterable, Sendable {
     case home = "navigation.home"
     case switchMode = "system.switch_mode"
     case scroll = "pointer.scroll"
+    case pointerMove = "pointer.move"
+    case pointerClick = "pointer.click"
     case inputText = "input.text"
     case deleteBackward = "input.delete_backward"
     case submitText = "input.submit"

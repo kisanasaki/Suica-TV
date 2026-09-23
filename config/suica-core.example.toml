@@ -11,5 +11,6 @@ system_backend = "auto"
 input_backend = "auto"
 wtype_binary = "/usr/bin/wtype"
 xdotool_binary = "/usr/bin/xdotool"
+ydotool_binary = "/usr/bin/ydotool"
 command_timeout = 10
 # unclutter_binary = "/usr/bin/unclutter"

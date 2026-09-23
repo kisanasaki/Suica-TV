@@ -238,6 +238,14 @@ async fn dispatch(
             ensure_remote_tv_mode(state, role).await?;
             state.mode_manager.scroll_browser(*dx, *dy).await
         }
+        RemoteAction::PointerMove { dx, dy } => {
+            ensure_remote_stable_tv_mode(state, role).await?;
+            state.mode_manager.move_pointer(*dx, *dy).await
+        }
+        RemoteAction::PointerClick => {
+            ensure_remote_stable_tv_mode(state, role).await?;
+            state.mode_manager.click_pointer().await
+        }
         RemoteAction::InputText(text) => {
             ensure_remote_tv_mode(state, role).await?;
             state.mode_manager.type_browser_text(text).await
@@ -273,6 +281,14 @@ async fn ensure_remote_tv_mode(state: &AppState, role: ClientRole) -> Result<(),
         return Err(CoreError::ForbiddenRole);
     }
     if state.mode_manager.snapshot().await.mode != DisplayMode::Tv {
+        return Err(CoreError::InvalidState);
+    }
+    Ok(())
+}
+
+async fn ensure_remote_stable_tv_mode(state: &AppState, role: ClientRole) -> Result<(), CoreError> {
+    ensure_remote_tv_mode(state, role).await?;
+    if state.mode_manager.snapshot().await.transitioning {
         return Err(CoreError::InvalidState);
     }
     Ok(())

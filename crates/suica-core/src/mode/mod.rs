@@ -193,6 +193,22 @@ impl ModeManager {
         self.backend.scroll_browser(dx, dy).await
     }
 
+    pub async fn move_pointer(&self, dx: i32, dy: i32) -> Result<(), CoreError> {
+        let _guard = self.transition.try_lock().map_err(|_| CoreError::Busy)?;
+        if !matches!(*self.state.read().await, ModeState::Stable(DisplayMode::Tv)) {
+            return Err(CoreError::InvalidState);
+        }
+        self.backend.move_pointer(dx, dy).await
+    }
+
+    pub async fn click_pointer(&self) -> Result<(), CoreError> {
+        let _guard = self.transition.try_lock().map_err(|_| CoreError::Busy)?;
+        if !matches!(*self.state.read().await, ModeState::Stable(DisplayMode::Tv)) {
+            return Err(CoreError::InvalidState);
+        }
+        self.backend.click_pointer().await
+    }
+
     pub async fn recover_tv_after_crash(&self) -> Result<bool, CoreError> {
         self.recover_tv_after_crash_with_delays(&[
             Duration::ZERO,
@@ -308,6 +324,29 @@ mod tests {
             m.switch(DisplayMode::Tv, Uuid::new_v4()).await.unwrap(),
             DisplayMode::Tv
         );
+    }
+
+    #[tokio::test]
+    async fn pointer_input_is_rejected_during_mode_transition() {
+        let manager = ModeManager::new(Arc::new(Fake {
+            mode: RwLock::new(DisplayMode::Tv),
+        }))
+        .await
+        .unwrap();
+        *manager.state.write().await = ModeState::Switching {
+            from: DisplayMode::Tv,
+            to: DisplayMode::Pc,
+            request_id: Uuid::new_v4(),
+        };
+
+        assert!(matches!(
+            manager.click_pointer().await,
+            Err(CoreError::InvalidState)
+        ));
+        assert!(matches!(
+            manager.move_pointer(10, 10).await,
+            Err(CoreError::InvalidState)
+        ));
     }
 
     struct Failing;

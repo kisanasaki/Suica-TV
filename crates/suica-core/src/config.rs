@@ -26,6 +26,7 @@ pub struct Config {
     pub input_backend: InputBackendKind,
     pub wtype_binary: PathBuf,
     pub xdotool_binary: PathBuf,
+    pub ydotool_binary: PathBuf,
     pub unclutter_binary: Option<PathBuf>,
     #[serde(with = "duration_seconds")]
     pub command_timeout: Duration,
@@ -67,6 +68,7 @@ impl Default for Config {
             input_backend: InputBackendKind::Auto,
             wtype_binary: PathBuf::from("/usr/bin/wtype"),
             xdotool_binary: PathBuf::from("/usr/bin/xdotool"),
+            ydotool_binary: PathBuf::from("/usr/bin/ydotool"),
             unclutter_binary: None,
             command_timeout: Duration::from_secs(10),
         }
@@ -141,6 +143,9 @@ impl Config {
         }
         if let Ok(value) = env::var("SUICA_CORE_XDOTOOL_BINARY") {
             config.xdotool_binary = value.into();
+        }
+        if let Ok(value) = env::var("SUICA_CORE_YDOTOOL_BINARY") {
+            config.ydotool_binary = value.into();
         }
         if let Ok(value) = env::var("SUICA_CORE_UNCLUTTER_BINARY") {
             config.unclutter_binary = if value.is_empty() {

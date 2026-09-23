@@ -99,6 +99,8 @@ async fn remote_commands_reach_tv_and_tv_can_switch_to_pc() {
     for action in [
         "navigation.down",
         "pointer.scroll",
+        "pointer.move",
+        "pointer.click",
         "input.text",
         "input.delete_backward",
         "input.submit",
@@ -107,6 +109,7 @@ async fn remote_commands_reach_tv_and_tv_can_switch_to_pc() {
         let params = match action {
             "input.text" => Some(json!({"text": "日本語🍉"})),
             "pointer.scroll" => Some(json!({"dx": 0, "dy": 240})),
+            "pointer.move" => Some(json!({"dx": 20, "dy": -10})),
             _ => None,
         };
         let mut command = json!({
