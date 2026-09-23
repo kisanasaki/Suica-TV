@@ -22,6 +22,16 @@ export const MENU_ITEMS: readonly MenuItem[] = [
     column: 1,
   },
   {
+    id: 'zaim',
+    label: 'Zaim',
+    description: '家計を確認する',
+    icon: '¥',
+    kind: 'external-url',
+    target: 'https://zaim.net/user_session/new',
+    row: 1,
+    column: 0,
+  },
+  {
     id: 'pc-mode',
     label: 'PC Mode',
     description: 'デスクトップへ切り替える',
@@ -29,7 +39,7 @@ export const MENU_ITEMS: readonly MenuItem[] = [
     kind: 'system-command',
     target: 'pc',
     row: 1,
-    column: 0,
+    column: 1,
   },
   {
     id: 'settings',
@@ -38,8 +48,8 @@ export const MENU_ITEMS: readonly MenuItem[] = [
     icon: '⚙',
     kind: 'internal-page',
     target: 'settings',
-    row: 1,
-    column: 1,
+    row: 2,
+    column: 0,
   },
 ] as const;
 

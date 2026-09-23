@@ -15,7 +15,7 @@ export type NavigationAction =
   | 'navigation.back'
   | 'navigation.home';
 
-export type MenuItemId = 'youtube' | 'browser' | 'pc-mode' | 'settings';
+export type MenuItemId = 'youtube' | 'browser' | 'zaim' | 'pc-mode' | 'settings';
 
 export interface MenuItem {
   id: MenuItemId;

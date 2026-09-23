@@ -4,7 +4,7 @@ import { appReducer, initialState } from './appReducer';
 describe('appReducer', () => {
   it.each([
     ['navigation.right', 'browser'],
-    ['navigation.down', 'pc-mode'],
+    ['navigation.down', 'zaim'],
     ['navigation.left', 'youtube'],
     ['navigation.up', 'youtube'],
   ] as const)('%s moves or remains on the expected tile', (direction, expected) => {
@@ -17,6 +17,13 @@ describe('appReducer', () => {
     expect(appReducer(browser, { type: 'navigate', direction: 'navigation.right' }).selectedId).toBe('browser');
     const settings = { ...initialState, selectedId: 'settings' as const };
     expect(appReducer(settings, { type: 'navigate', direction: 'navigation.down' }).selectedId).toBe('settings');
+  });
+
+  it('navigates through the added Zaim row to settings', () => {
+    const zaim = appReducer(initialState, { type: 'navigate', direction: 'navigation.down' });
+    expect(zaim.selectedId).toBe('zaim');
+    expect(appReducer(zaim, { type: 'navigate', direction: 'navigation.right' }).selectedId).toBe('pc-mode');
+    expect(appReducer(zaim, { type: 'navigate', direction: 'navigation.down' }).selectedId).toBe('settings');
   });
 
   it('home resets the page and selection', () => {
