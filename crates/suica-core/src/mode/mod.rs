@@ -4,8 +4,9 @@ use crate::{
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 use tokio::sync::{Mutex, RwLock};
+use tokio::time::timeout;
 use uuid::Uuid;
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -39,15 +40,24 @@ pub struct ModeManager {
     state: RwLock<ModeState>,
     transition: Mutex<()>,
     changed_at: RwLock<DateTime<Utc>>,
+    transition_timeout: Duration,
 }
 impl ModeManager {
     pub async fn new(backend: Arc<dyn SystemBackend>) -> Result<Self, CoreError> {
+        Self::with_timeout(backend, Duration::from_secs(10)).await
+    }
+
+    pub async fn with_timeout(
+        backend: Arc<dyn SystemBackend>,
+        transition_timeout: Duration,
+    ) -> Result<Self, CoreError> {
         let initial = backend.reconcile().await?;
         Ok(Self {
             backend,
             state: RwLock::new(ModeState::Stable(initial)),
             transition: Mutex::new(()),
             changed_at: RwLock::new(Utc::now()),
+            transition_timeout,
         })
     }
     pub async fn snapshot(&self) -> ModeSnapshot {
@@ -95,21 +105,45 @@ impl ModeManager {
             to: target,
             request_id,
         };
-        let result = match target {
-            DisplayMode::Tv => self.backend.start_tv().await,
-            DisplayMode::Pc => self.backend.stop_tv().await,
+        let operation = async {
+            match target {
+                DisplayMode::Tv => self.backend.start_tv().await,
+                DisplayMode::Pc => self.backend.stop_tv().await,
+            }
         };
+        let result = timeout(self.transition_timeout, operation).await;
         match result {
-            Ok(()) => {
+            Ok(Ok(())) => {
                 *self.state.write().await = ModeState::Stable(target);
                 *self.changed_at.write().await = Utc::now();
                 Ok(target)
             }
-            Err(e) => {
-                *self.state.write().await = ModeState::Stable(from);
+            Ok(Err(e)) => {
+                self.recover_after_failure(from, e.to_string()).await;
                 Err(e)
             }
+            Err(_) => {
+                self.recover_after_failure(from, "mode transition timed out".into())
+                    .await;
+                Err(CoreError::Timeout)
+            }
         }
+    }
+
+    async fn recover_after_failure(&self, last_stable: DisplayMode, reason: String) {
+        let reconciled = timeout(self.transition_timeout, self.backend.reconcile()).await;
+        *self.state.write().await = match reconciled {
+            Ok(Ok(mode)) => ModeState::Stable(mode),
+            Ok(Err(error)) => ModeState::Degraded {
+                last_stable: Some(last_stable),
+                reason: format!("{reason}; reconciliation failed: {error}"),
+            },
+            Err(_) => ModeState::Degraded {
+                last_stable: Some(last_stable),
+                reason: format!("{reason}; reconciliation timed out"),
+            },
+        };
+        *self.changed_at.write().await = Utc::now();
     }
     pub async fn ensure_tv_home(&self, request_id: Uuid) -> Result<(), CoreError> {
         if self.snapshot().await.mode != DisplayMode::Tv {
@@ -129,6 +163,7 @@ impl ModeManager {
 mod tests {
     use super::*;
     use async_trait::async_trait;
+    use std::sync::atomic::{AtomicBool, Ordering};
     struct Fake {
         mode: RwLock<DisplayMode>,
     }
@@ -244,5 +279,63 @@ mod tests {
             Err(CoreError::Busy)
         ));
         first.await.unwrap().unwrap();
+    }
+
+    struct TimeoutOnce {
+        mode: RwLock<DisplayMode>,
+        first_stop: AtomicBool,
+    }
+
+    #[async_trait]
+    impl SystemBackend for TimeoutOnce {
+        async fn reconcile(&self) -> Result<DisplayMode, CoreError> {
+            Ok(*self.mode.read().await)
+        }
+        async fn start_tv(&self) -> Result<(), CoreError> {
+            *self.mode.write().await = DisplayMode::Tv;
+            Ok(())
+        }
+        async fn stop_tv(&self) -> Result<(), CoreError> {
+            if self.first_stop.swap(false, Ordering::SeqCst) {
+                tokio::time::sleep(Duration::from_millis(50)).await;
+            }
+            *self.mode.write().await = DisplayMode::Pc;
+            Ok(())
+        }
+        async fn show_home(&self) -> Result<(), CoreError> {
+            Ok(())
+        }
+        async fn send_browser_key(&self, _key: BrowserKey) -> Result<(), CoreError> {
+            Ok(())
+        }
+        async fn type_browser_text(&self, _text: &str) -> Result<(), CoreError> {
+            Ok(())
+        }
+    }
+
+    #[tokio::test]
+    async fn timeout_recovers_state_and_allows_next_switch() {
+        let manager = ModeManager::with_timeout(
+            Arc::new(TimeoutOnce {
+                mode: RwLock::new(DisplayMode::Tv),
+                first_stop: AtomicBool::new(true),
+            }),
+            Duration::from_millis(5),
+        )
+        .await
+        .unwrap();
+
+        assert!(matches!(
+            manager.switch(DisplayMode::Pc, Uuid::new_v4()).await,
+            Err(CoreError::Timeout)
+        ));
+        let recovered = manager.snapshot().await;
+        assert_eq!(recovered.mode, DisplayMode::Tv);
+        assert!(!recovered.transitioning);
+
+        assert_eq!(
+            manager.switch(DisplayMode::Pc, Uuid::new_v4()).await.unwrap(),
+            DisplayMode::Pc
+        );
     }
 }

@@ -236,12 +236,10 @@ async fn dispatch(
                     changed_at: before.changed_at,
                 })
                 .await;
-            let result = timeout(
-                state.config.command_timeout,
-                state.mode_manager.switch(*target, command.request_id),
-            )
-            .await
-            .map_err(|_| CoreError::Timeout)?;
+            let result = state
+                .mode_manager
+                .switch(*target, command.request_id)
+                .await;
             broadcast_mode(state).await;
             result.map(|_| ())
         }

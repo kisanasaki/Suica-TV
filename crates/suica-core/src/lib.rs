@@ -30,7 +30,9 @@ use crate::{
 
 pub async fn build_state(config: Config) -> Result<AppState, CoreError> {
     let backend = create_system_backend(&config).await?;
-    let mode_manager = Arc::new(ModeManager::new(backend).await?);
+    let mode_manager = Arc::new(
+        ModeManager::with_timeout(backend, config.command_timeout).await?,
+    );
     let token_store = Arc::new(TokenStore::load(config.token_store.clone()).await?);
     Ok(AppState {
         config: Arc::new(config),
