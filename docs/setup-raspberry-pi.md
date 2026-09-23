@@ -101,7 +101,7 @@ static_dir = "/home/pi/suica-tv/apps/tv/dist"
 home_url = "http://127.0.0.1:3030/"
 chromium_binary = "/usr/bin/chromium"
 profile_dir = "/home/pi/.local/share/suica-tv/chromium-profile"
-pid_file = "/home/pi/.local/share/suica-tv/chromium.pid"
+pid_file = "/home/pi/.local/share/suica-tv/suica-tv.pid"
 token_store = "/home/pi/.local/share/suica-tv/tokens.json"
 pairing_code = "CHANGE_ME"
 system_backend = "auto"
@@ -188,12 +188,12 @@ command -v chromium
 command -v chromium-browser
 ```
 
-実際のコマンドを`chromium_executable`へ設定する。
+実際のコマンドを`chromium_binary`へ設定する。
 
 ### PCモードへ切り替わらない
 
 ```bash
-cat "$HOME/.local/share/suica-tv/chromium.pid"
+cat "$HOME/.local/share/suica-tv/suica-tv.pid"
 journalctl --user -u suica-core -n 100 --no-pager
 ```
 
