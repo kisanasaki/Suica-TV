@@ -30,6 +30,7 @@ impl ClientRole {
 #[derive(Clone)]
 struct ClientEntry {
     role: ClientRole,
+    device_id: Option<Uuid>,
     tx: mpsc::Sender<ServerMessage>,
 }
 #[derive(Clone, Default)]
@@ -48,6 +49,7 @@ impl ClientRegistry {
     pub async fn register(
         &self,
         role: ClientRole,
+        device_id: Option<Uuid>,
     ) -> Result<(Uuid, mpsc::Receiver<ServerMessage>), CoreError> {
         let mut all = self.inner.write().await;
         let count = all.values().filter(|c| c.role == role).count();
@@ -61,11 +63,24 @@ impl ClientRegistry {
         }
         let id = Uuid::new_v4();
         let (tx, rx) = mpsc::channel(32);
-        all.insert(id, ClientEntry { role, tx });
+        all.insert(
+            id,
+            ClientEntry {
+                role,
+                device_id,
+                tx,
+            },
+        );
         Ok((id, rx))
     }
     pub async fn remove(&self, id: Uuid) {
         self.inner.write().await.remove(&id);
+    }
+    pub async fn disconnect_device(&self, device_id: Uuid) {
+        self.inner
+            .write()
+            .await
+            .retain(|_, client| client.device_id != Some(device_id));
     }
     pub async fn send_tv(&self, msg: ServerMessage) -> Result<(), CoreError> {
         let tx = self
@@ -193,18 +208,34 @@ mod tests {
         let clients = ClientRegistry::default();
         let mut remotes = Vec::new();
         for _ in 0..4 {
-            remotes.push(clients.register(ClientRole::Remote).await.unwrap().0);
+            remotes.push(
+                clients
+                    .register(ClientRole::Remote, Some(Uuid::new_v4()))
+                    .await
+                    .unwrap()
+                    .0,
+            );
         }
-        assert!(clients.register(ClientRole::Remote).await.is_err());
+        assert!(
+            clients
+                .register(ClientRole::Remote, Some(Uuid::new_v4()))
+                .await
+                .is_err()
+        );
         clients.remove(remotes[0]).await;
-        assert!(clients.register(ClientRole::Remote).await.is_ok());
+        assert!(
+            clients
+                .register(ClientRole::Remote, Some(Uuid::new_v4()))
+                .await
+                .is_ok()
+        );
     }
 
     #[tokio::test]
     async fn new_tv_connection_replaces_the_previous_connection() {
         let clients = ClientRegistry::default();
-        let (_, mut previous) = clients.register(ClientRole::Tv).await.unwrap();
-        let (_, mut current) = clients.register(ClientRole::Tv).await.unwrap();
+        let (_, mut previous) = clients.register(ClientRole::Tv, None).await.unwrap();
+        let (_, mut current) = clients.register(ClientRole::Tv, None).await.unwrap();
 
         assert!(previous.recv().await.is_none());
         let message = ServerMessage::Shutdown {
@@ -223,10 +254,34 @@ mod tests {
     async fn reports_whether_a_tv_client_is_connected() {
         let clients = ClientRegistry::default();
         assert!(!clients.has_tv().await);
-        let (id, _) = clients.register(ClientRole::Tv).await.unwrap();
+        let (id, _) = clients.register(ClientRole::Tv, None).await.unwrap();
         assert!(clients.has_tv().await);
         clients.remove(id).await;
         assert!(!clients.has_tv().await);
+    }
+
+    #[tokio::test]
+    async fn disconnects_only_connections_for_the_revoked_device() {
+        let clients = ClientRegistry::default();
+        let revoked = Uuid::new_v4();
+        let retained = Uuid::new_v4();
+        let (_, mut revoked_rx) = clients
+            .register(ClientRole::Remote, Some(revoked))
+            .await
+            .unwrap();
+        let (_, mut retained_rx) = clients
+            .register(ClientRole::Remote, Some(retained))
+            .await
+            .unwrap();
+
+        clients.disconnect_device(revoked).await;
+        assert!(revoked_rx.recv().await.is_none());
+        clients
+            .broadcast(ServerMessage::Shutdown {
+                retry_after_seconds: 3,
+            })
+            .await;
+        assert!(retained_rx.recv().await.is_some());
     }
 
     #[tokio::test]

@@ -1,5 +1,6 @@
 use crate::error::CoreError;
 use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
+use chrono::{DateTime, Utc};
 use rand::RngCore;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -19,6 +20,16 @@ struct TokenRecord {
     device_id: Uuid,
     device_name: String,
     token_hash: String,
+    #[serde(default)]
+    created_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct PairedDevice {
+    pub device_id: Uuid,
+    pub device_name: String,
+    pub created_at: Option<DateTime<Utc>>,
 }
 pub struct TokenStore {
     path: PathBuf,
@@ -47,18 +58,46 @@ impl TokenStore {
             device_id: id,
             device_name,
             token_hash: hash(&token),
+            created_at: Some(Utc::now()),
         });
         self.persist(&updated).await?;
         *records = updated;
         Ok((id, token))
     }
     pub async fn verify(&self, token: &str) -> bool {
+        self.verify_device(token).await.is_some()
+    }
+    pub async fn verify_device(&self, token: &str) -> Option<Uuid> {
         let wanted = hash(token);
         self.records
             .read()
             .await
             .iter()
-            .any(|r| bool::from(r.token_hash.as_bytes().ct_eq(wanted.as_bytes())))
+            .find(|r| bool::from(r.token_hash.as_bytes().ct_eq(wanted.as_bytes())))
+            .map(|record| record.device_id)
+    }
+    pub async fn list(&self) -> Vec<PairedDevice> {
+        self.records
+            .read()
+            .await
+            .iter()
+            .map(|record| PairedDevice {
+                device_id: record.device_id,
+                device_name: record.device_name.clone(),
+                created_at: record.created_at,
+            })
+            .collect()
+    }
+    pub async fn revoke(&self, device_id: Uuid) -> Result<bool, CoreError> {
+        let mut records = self.records.write().await;
+        if !records.iter().any(|record| record.device_id == device_id) {
+            return Ok(false);
+        }
+        let mut updated = records.clone();
+        updated.retain(|record| record.device_id != device_id);
+        self.persist(&updated).await?;
+        *records = updated;
+        Ok(true)
     }
     async fn persist(&self, records: &[TokenRecord]) -> Result<(), CoreError> {
         if let Some(parent) = self.path.parent() {
@@ -165,6 +204,48 @@ mod tests {
 
         assert!(store.issue("phone".into()).await.is_err());
         assert!(store.records.read().await.is_empty());
+    }
+    #[tokio::test]
+    async fn lists_and_revokes_only_the_selected_device() {
+        let d = tempfile::tempdir().unwrap();
+        let p = d.path().join("tokens.json");
+        let store = TokenStore::load(p.clone()).await.unwrap();
+        let (first_id, first_token) = store.issue("first phone".into()).await.unwrap();
+        let (second_id, second_token) = store.issue("second phone".into()).await.unwrap();
+
+        let devices = store.list().await;
+        assert_eq!(devices.len(), 2);
+        assert_eq!(devices[0].device_id, first_id);
+        assert_eq!(devices[0].device_name, "first phone");
+        assert!(devices[0].created_at.is_some());
+
+        assert!(store.revoke(first_id).await.unwrap());
+        assert!(!store.verify(&first_token).await);
+        assert!(store.verify(&second_token).await);
+        assert!(!store.revoke(first_id).await.unwrap());
+
+        let reloaded = TokenStore::load(p).await.unwrap();
+        assert_eq!(reloaded.list().await[0].device_id, second_id);
+    }
+
+    #[tokio::test]
+    async fn loads_legacy_records_without_created_at() {
+        let d = tempfile::tempdir().unwrap();
+        let p = d.path().join("tokens.json");
+        let device_id = Uuid::new_v4();
+        tokio::fs::write(
+            &p,
+            format!(
+                r#"[{{"deviceId":"{device_id}","deviceName":"legacy","tokenHash":"{}"}}]"#,
+                hash("legacy-token")
+            ),
+        )
+        .await
+        .unwrap();
+
+        let store = TokenStore::load(p).await.unwrap();
+        assert_eq!(store.list().await[0].created_at, None);
+        assert_eq!(store.verify_device("legacy-token").await, Some(device_id));
     }
     #[tokio::test]
     async fn failure_limiter_stops_at_ten_attempts() {

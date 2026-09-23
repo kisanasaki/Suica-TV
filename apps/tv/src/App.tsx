@@ -13,6 +13,7 @@ import type { MenuItemId, NavigationAction } from './state/types';
 function TvApplication() {
   const { state, dispatch } = useAppState();
   const coreClientRef = useRef<CoreClient | null>(null);
+  const settingsNavigationRef = useRef<((action: NavigationAction) => void) | null>(null);
 
   const showError = useCallback((message: string) => dispatch({ type: 'show-error', message }), [dispatch]);
   const handleNavigation = useCallback((action: NavigationAction) => {
@@ -49,6 +50,10 @@ function TvApplication() {
   }, [dispatch, showError, state.connection, state.modeSwitchPending]);
 
   const processAction = useCallback((action: NavigationAction) => {
+    if (state.page === 'settings') {
+      settingsNavigationRef.current?.(action);
+      return;
+    }
     if (action === 'navigation.select') {
       if (state.page === 'home') void selectItem(state.selectedId);
       return;
@@ -103,6 +108,7 @@ function TvApplication() {
           connection={state.connection}
           mode={state.mode}
           onBack={() => dispatch({ type: 'go-back' })}
+          registerNavigationHandler={(handler) => { settingsNavigationRef.current = handler; }}
         />
       )}
 

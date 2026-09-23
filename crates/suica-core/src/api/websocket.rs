@@ -48,24 +48,34 @@ pub async fn upgrade(
     if role == ClientRole::Tv && !is_loopback(addr.ip()) {
         return CoreError::ForbiddenRole.into_response();
     }
-    if role == ClientRole::Remote {
+    let device_id = if role == ClientRole::Remote {
         let token = headers
             .get(axum::http::header::AUTHORIZATION)
             .and_then(|v| v.to_str().ok())
             .and_then(|v| v.strip_prefix("Bearer "));
         match token {
-            Some(token) if state.token_store.verify(token).await => {}
-            _ => return CoreError::Unauthorized.into_response(),
+            Some(token) => match state.token_store.verify_device(token).await {
+                Some(device_id) => Some(device_id),
+                None => return CoreError::Unauthorized.into_response(),
+            },
+            None => return CoreError::Unauthorized.into_response(),
         }
-    }
+    } else {
+        None
+    };
     ws.max_message_size(64 * 1024)
         .max_frame_size(64 * 1024)
-        .on_upgrade(move |socket| handle_socket(socket, state, role))
+        .on_upgrade(move |socket| handle_socket(socket, state, role, device_id))
         .into_response()
 }
 
-async fn handle_socket(mut socket: WebSocket, state: AppState, role: ClientRole) {
-    let (connection_id, mut outbound) = match state.clients.register(role).await {
+async fn handle_socket(
+    mut socket: WebSocket,
+    state: AppState,
+    role: ClientRole,
+    device_id: Option<uuid::Uuid>,
+) {
+    let (connection_id, mut outbound) = match state.clients.register(role, device_id).await {
         Ok(v) => v,
         Err(e) => {
             let _ = socket

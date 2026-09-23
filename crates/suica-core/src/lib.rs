@@ -11,7 +11,7 @@ use std::sync::Arc;
 
 use axum::{
     Router,
-    routing::{any, get, post},
+    routing::{any, delete, get, post},
 };
 use tower_http::{
     services::{ServeDir, ServeFile},
@@ -19,7 +19,7 @@ use tower_http::{
 };
 
 use crate::{
-    api::{health, pairing as pairing_api, websocket},
+    api::{devices, health, pairing as pairing_api, websocket},
     config::Config,
     error::CoreError,
     mode::ModeManager,
@@ -51,6 +51,8 @@ pub fn build_router(state: AppState) -> Router {
         .route("/health/live", get(health::live))
         .route("/health/ready", get(health::ready))
         .route("/api/v1/pair", post(pairing_api::pair))
+        .route("/api/v1/devices", get(devices::list))
+        .route("/api/v1/devices/{device_id}", delete(devices::revoke))
         .route("/ws", any(websocket::upgrade))
         .fallback_service(static_files)
         .layer(TraceLayer::new_for_http())

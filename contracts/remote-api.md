@@ -30,6 +30,29 @@ Reactの`index.html`を配信できる場合は`200 OK`、準備できていな�
 
 コード認証の失敗は接続元IPごとに1分10回まで。`deviceName`は空文字を許可せず、最大64文字とする。
 
+### `GET /api/v1/devices`
+
+Coreと同じ端末のループバック接続からのみ利用できる。登録端末を返す。
+
+```json
+{
+  "devices": [
+    {
+      "deviceId": "550e8400-e29b-41d4-a716-446655440000",
+      "deviceName": "My iPhone",
+      "createdAt": "2026-09-24T00:00:00Z"
+    }
+  ]
+}
+```
+
+旧形式から読み込んだ端末は`createdAt`が`null`になる。
+
+### `DELETE /api/v1/devices/{deviceId}`
+
+ループバック接続から指定端末を失効する。成功時は`204 No Content`、存在しない端末は`404 Not Found`。
+失効した端末の既存WebSocket接続も切断され、再度利用するにはペアリングが必要になる。他端末は影響を受けない。
+
 ## WebSocket
 
 接続先:
