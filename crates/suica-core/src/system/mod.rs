@@ -28,6 +28,7 @@ pub enum BrowserKey {
     Right,
     Enter,
     Escape,
+    HistoryBack,
     Backspace,
 }
 
@@ -41,6 +42,7 @@ impl BrowserKey {
             Self::Right => "Right",
             Self::Enter => "Return",
             Self::Escape => "Escape",
+            Self::HistoryBack => "alt+Left",
             Self::Backspace => "BackSpace",
         }
     }
@@ -303,8 +305,18 @@ mod linux {
         async fn send_browser_key(&self, key: BrowserKey) -> Result<(), CoreError> {
             match self.resolved_input_backend()? {
                 InputBackendKind::Wtype => {
-                    self.run_input(Command::new(&self.config.wtype_binary).args(["-k", key.name()]))
+                    if key == BrowserKey::HistoryBack {
+                        self.run_input(
+                            Command::new(&self.config.wtype_binary)
+                                .args(["-M", "alt", "-k", "Left", "-m", "alt"]),
+                        )
                         .await
+                    } else {
+                        self.run_input(
+                            Command::new(&self.config.wtype_binary).args(["-k", key.name()]),
+                        )
+                        .await
+                    }
                 }
                 InputBackendKind::Xdotool => {
                     self.run_input(Command::new(&self.config.xdotool_binary).args([

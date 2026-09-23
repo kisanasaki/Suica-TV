@@ -263,7 +263,7 @@ fn browser_key(action: NavigationAction) -> BrowserKey {
         NavigationAction::Left => BrowserKey::Left,
         NavigationAction::Right => BrowserKey::Right,
         NavigationAction::Select => BrowserKey::Enter,
-        NavigationAction::Back => BrowserKey::Escape,
+        NavigationAction::Back => BrowserKey::HistoryBack,
         NavigationAction::Home => unreachable!("home is handled before browser input"),
     }
 }
@@ -307,5 +307,10 @@ mod tests {
     fn query_uses_camel_case() {
         let q: WsQuery = serde_json::from_str(r#"{"role":"tv","protocolVersion":1}"#).unwrap();
         assert_eq!(q.protocol_version, 1);
+    }
+
+    #[test]
+    fn external_page_back_uses_browser_history() {
+        assert_eq!(browser_key(NavigationAction::Back), BrowserKey::HistoryBack);
     }
 }

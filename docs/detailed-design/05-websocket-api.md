@@ -109,6 +109,10 @@ TVロールからの`system.switch_mode`は、ループバック接続かつ`par
 ログへ出力しない。ReactのTV接続がないTVモードでは、Coreが`navigation.*`をChromiumの
 キーボード操作へ変換する。`input.*`は常にCoreからChromiumへ直接入力する。
 
+`navigation.back`はReact接続中はTVアプリ内の前画面へ転送する。外部ページ表示中などTV接続が
+ない場合はChromiumの履歴戻り（Alt+Left）へ変換する。戻り先がない場合は何も変更されず、
+`navigation.home`によるホーム復帰とは区別する。
+
 `pointer.scroll`の`dx`と`dy`は相対スクロール量で、各軸-1200〜1200とする。両方が0の要求は
 拒否する。iOSは連続操作を75ミリ秒ごとに集約し、Coreは入力バックエンドに応じて安全な
 ホイール操作または方向キー操作へ変換する。
