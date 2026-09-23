@@ -274,7 +274,7 @@ async fn ensure_remote_tv_mode(state: &AppState, role: ClientRole) -> Result<(),
     Ok(())
 }
 
-async fn broadcast_mode(state: &AppState) {
+pub async fn broadcast_mode(state: &AppState) {
     let s = state.mode_manager.snapshot().await;
     state
         .clients

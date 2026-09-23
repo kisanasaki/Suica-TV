@@ -24,10 +24,30 @@ async fn main() -> Result<(), CoreError> {
     let listener = tokio::net::TcpListener::bind(addr).await?;
     #[cfg(target_os = "linux")]
     {
-        let manager = state.mode_manager.clone();
+        let monitor_state = state.clone();
         tokio::spawn(async move {
-            if let Err(e) = manager.ensure_tv_home(uuid::Uuid::new_v4()).await {
+            if let Err(e) = monitor_state
+                .mode_manager
+                .ensure_tv_home(uuid::Uuid::new_v4())
+                .await
+            {
                 tracing::error!(error=%e,"failed to start TV mode")
+            }
+            let mut monitor = tokio::time::interval(Duration::from_secs(2));
+            monitor.tick().await;
+            loop {
+                monitor.tick().await;
+                match monitor_state.mode_manager.recover_tv_after_crash().await {
+                    Ok(true) => {
+                        tracing::warn!("Chromium exited unexpectedly and was restarted");
+                        websocket::broadcast_mode(&monitor_state).await;
+                    }
+                    Ok(false) => {}
+                    Err(error) => {
+                        tracing::error!(error=%error,"Chromium recovery failed");
+                        websocket::broadcast_mode(&monitor_state).await;
+                    }
+                }
             }
         });
     }

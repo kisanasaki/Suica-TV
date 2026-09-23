@@ -6,7 +6,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::{sync::Arc, time::Duration};
 use tokio::sync::{Mutex, RwLock};
-use tokio::time::timeout;
+use tokio::time::{sleep, timeout};
 use uuid::Uuid;
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -187,6 +187,74 @@ impl ModeManager {
     }
     pub async fn type_browser_text(&self, text: &str) -> Result<(), CoreError> {
         self.backend.type_browser_text(text).await
+    }
+
+    pub async fn recover_tv_after_crash(&self) -> Result<bool, CoreError> {
+        self.recover_tv_after_crash_with_delays(&[
+            Duration::ZERO,
+            Duration::from_secs(1),
+            Duration::from_secs(2),
+            Duration::from_secs(4),
+            Duration::from_secs(8),
+        ])
+        .await
+    }
+
+    async fn recover_tv_after_crash_with_delays(
+        &self,
+        delays: &[Duration],
+    ) -> Result<bool, CoreError> {
+        let _guard = match self.transition.try_lock() {
+            Ok(guard) => guard,
+            Err(_) => return Ok(false),
+        };
+        if !matches!(*self.state.read().await, ModeState::Stable(DisplayMode::Tv)) {
+            return Ok(false);
+        }
+
+        let actual = timeout(self.transition_timeout, self.backend.reconcile())
+            .await
+            .map_err(|_| CoreError::Timeout)??;
+        if actual == DisplayMode::Tv {
+            return Ok(false);
+        }
+
+        let mut failure = "Chromium exited while TV mode was active".to_owned();
+        for delay in delays {
+            sleep(*delay).await;
+            *self.state.write().await = ModeState::Switching {
+                from: DisplayMode::Pc,
+                to: DisplayMode::Tv,
+                request_id: Uuid::new_v4(),
+            };
+            match timeout(self.transition_timeout, self.backend.start_tv()).await {
+                Ok(Ok(())) => {
+                    *self.state.write().await = ModeState::Stable(DisplayMode::Tv);
+                    *self.changed_at.write().await = Utc::now();
+                    return Ok(true);
+                }
+                Ok(Err(error)) => failure = error.to_string(),
+                Err(_) => failure = "Chromium restart timed out".into(),
+            }
+            if matches!(
+                timeout(self.transition_timeout, self.backend.reconcile()).await,
+                Ok(Ok(DisplayMode::Tv))
+            ) {
+                *self.state.write().await = ModeState::Stable(DisplayMode::Tv);
+                *self.changed_at.write().await = Utc::now();
+                return Ok(true);
+            }
+        }
+
+        *self.state.write().await = ModeState::Degraded {
+            last_stable: Some(DisplayMode::Pc),
+            reason: failure.clone(),
+        };
+        *self.changed_at.write().await = Utc::now();
+        Err(CoreError::ModeSwitchFailed(format!(
+            "Chromium recovery stopped after {} attempts: {failure}",
+            delays.len()
+        )))
     }
 }
 
@@ -442,5 +510,103 @@ mod tests {
         ));
         first.await.unwrap().unwrap();
         assert_eq!(backend.homes.load(Ordering::SeqCst), 1);
+    }
+
+    struct CrashRecoveryFake {
+        mode: RwLock<DisplayMode>,
+        starts: AtomicUsize,
+        failures_remaining: AtomicUsize,
+    }
+
+    #[async_trait]
+    impl SystemBackend for CrashRecoveryFake {
+        async fn reconcile(&self) -> Result<DisplayMode, CoreError> {
+            Ok(*self.mode.read().await)
+        }
+        async fn start_tv(&self) -> Result<(), CoreError> {
+            self.starts.fetch_add(1, Ordering::SeqCst);
+            if self
+                .failures_remaining
+                .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |count| {
+                    count.checked_sub(1)
+                })
+                .is_ok()
+            {
+                return Err(CoreError::ProcessControlFailed("crashed".into()));
+            }
+            *self.mode.write().await = DisplayMode::Tv;
+            Ok(())
+        }
+        async fn stop_tv(&self) -> Result<(), CoreError> {
+            *self.mode.write().await = DisplayMode::Pc;
+            Ok(())
+        }
+        async fn show_home(&self) -> Result<(), CoreError> {
+            Ok(())
+        }
+        async fn send_browser_key(&self, _key: BrowserKey) -> Result<(), CoreError> {
+            Ok(())
+        }
+        async fn type_browser_text(&self, _text: &str) -> Result<(), CoreError> {
+            Ok(())
+        }
+    }
+
+    #[tokio::test]
+    async fn crashed_tv_restarts_with_a_bounded_retry_count() {
+        let backend = Arc::new(CrashRecoveryFake {
+            mode: RwLock::new(DisplayMode::Tv),
+            starts: AtomicUsize::new(0),
+            failures_remaining: AtomicUsize::new(2),
+        });
+        let manager = ModeManager::new(backend.clone()).await.unwrap();
+        *backend.mode.write().await = DisplayMode::Pc;
+
+        assert!(
+            manager
+                .recover_tv_after_crash_with_delays(&[Duration::ZERO; 5])
+                .await
+                .unwrap()
+        );
+        assert_eq!(backend.starts.load(Ordering::SeqCst), 3);
+        assert_eq!(manager.snapshot().await.mode, DisplayMode::Tv);
+    }
+
+    #[tokio::test]
+    async fn repeated_crashes_degrade_to_actual_pc_mode() {
+        let backend = Arc::new(CrashRecoveryFake {
+            mode: RwLock::new(DisplayMode::Tv),
+            starts: AtomicUsize::new(0),
+            failures_remaining: AtomicUsize::new(10),
+        });
+        let manager = ModeManager::new(backend.clone()).await.unwrap();
+        *backend.mode.write().await = DisplayMode::Pc;
+
+        assert!(
+            manager
+                .recover_tv_after_crash_with_delays(&[Duration::ZERO; 5])
+                .await
+                .is_err()
+        );
+        assert_eq!(backend.starts.load(Ordering::SeqCst), 5);
+        let degraded = manager.snapshot().await;
+        assert_eq!(degraded.mode, DisplayMode::Pc);
+        assert!(!degraded.transitioning);
+        assert!(!manager.recover_tv_after_crash().await.unwrap());
+        assert_eq!(backend.starts.load(Ordering::SeqCst), 5);
+    }
+
+    #[tokio::test]
+    async fn pc_mode_is_not_restarted_by_crash_monitor() {
+        let backend = Arc::new(CrashRecoveryFake {
+            mode: RwLock::new(DisplayMode::Pc),
+            starts: AtomicUsize::new(0),
+            failures_remaining: AtomicUsize::new(0),
+        });
+        let manager = ModeManager::new(backend.clone()).await.unwrap();
+
+        assert!(!manager.recover_tv_after_crash().await.unwrap());
+        assert_eq!(backend.starts.load(Ordering::SeqCst), 0);
+        assert_eq!(manager.snapshot().await.mode, DisplayMode::Pc);
     }
 }

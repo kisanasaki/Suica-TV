@@ -192,13 +192,15 @@ TVモードでは`unclutter`またはデスクトップ環境のAPIを使用し�
 | 障害 | 検知 | 復旧 |
 |---|---|---|
 | Core異常終了 | systemd | 2秒後に再起動 |
-| Chromium異常終了 | systemdまたはCoreの監視 | 3秒後に再起動 |
+| Chromium異常終了 | Coreが2秒間隔で監視 | 即時、その後1、2、4、8秒後に再起動を試行 |
 | React配信失敗 | Readyが503 | Chromium起動を待機 |
 | Wi-Fi未接続 | network-online待機のタイムアウト | LAN外機能なしで起動継続、接続後利用可能 |
 | デスクトップ未起動 | 環境変数またはdisplay接続失敗 | kiosk unitを再試行 |
 | 起動ループ | systemd StartLimit | 停止してログを保持 |
 
 `StartLimitBurst=5`、`StartLimitIntervalSec=60`を基準とし、短時間に5回失敗した場合は自動再起動を止める。
+
+Coreの監視はTVモードが安定状態のときだけChromiumを復旧する。PCモード中や別のモード遷移中は起動しない。再起動は最大5回で止め、全試行が失敗した場合は実際のPC表示を状態として保持し、接続中のクライアントへ通知する。
 
 ## 12. ログ
 
