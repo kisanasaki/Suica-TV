@@ -365,7 +365,10 @@ mod tests {
         assert!(!recovered.transitioning);
 
         assert_eq!(
-            manager.switch(DisplayMode::Pc, Uuid::new_v4()).await.unwrap(),
+            manager
+                .switch(DisplayMode::Pc, Uuid::new_v4())
+                .await
+                .unwrap(),
             DisplayMode::Pc
         );
     }

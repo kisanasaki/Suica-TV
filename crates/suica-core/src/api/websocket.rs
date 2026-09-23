@@ -19,10 +19,7 @@ use std::{
     net::SocketAddr,
     time::{Duration, Instant},
 };
-use tokio::{
-    sync::mpsc,
-    time::interval,
-};
+use tokio::{sync::mpsc, time::interval};
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -233,10 +230,7 @@ async fn dispatch(
                     changed_at: before.changed_at,
                 })
                 .await;
-            let result = state
-                .mode_manager
-                .switch(*target, command.request_id)
-                .await;
+            let result = state.mode_manager.switch(*target, command.request_id).await;
             broadcast_mode(state).await;
             result.map(|_| ())
         }

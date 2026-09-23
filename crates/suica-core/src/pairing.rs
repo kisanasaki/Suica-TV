@@ -158,10 +158,10 @@ mod tests {
     async fn failed_persist_does_not_publish_record_in_memory() {
         let d = tempfile::tempdir().unwrap();
         let parent_file = d.path().join("not-a-directory");
-        tokio::fs::write(&parent_file, b"occupied").await.unwrap();
         let store = TokenStore::load(parent_file.join("tokens.json"))
             .await
             .unwrap();
+        tokio::fs::write(&parent_file, b"occupied").await.unwrap();
 
         assert!(store.issue("phone".into()).await.is_err());
         assert!(store.records.read().await.is_empty());
