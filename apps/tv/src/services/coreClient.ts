@@ -79,11 +79,11 @@ export class CoreClient {
     this.options.onStatus(this.reconnectAttempt === 0 ? 'connecting' : 'reconnecting');
     const socket = this.factory(this.options.url ?? getCoreWebSocketUrl());
     this.socket = socket;
+    let handshakeComplete = false;
 
     socket.addEventListener('open', () => {
       if (socket !== this.socket) return;
-      this.reconnectAttempt = 0;
-      this.options.onStatus('connected');
+      this.options.onStatus(this.reconnectAttempt === 0 ? 'connecting' : 'reconnecting');
     });
     socket.addEventListener('message', (event) => {
       if (typeof event.data !== 'string') return;
@@ -91,6 +91,15 @@ export class CoreClient {
       if (!message) {
         console.warn('Suica Coreから不正または未対応のメッセージを受信しました。');
         return;
+      }
+      if (!handshakeComplete) {
+        if (message.type !== 'server.hello' || message.protocolVersion !== 1 || message.role !== 'tv') {
+          socket.close(1002, 'invalid server handshake');
+          return;
+        }
+        handshakeComplete = true;
+        this.reconnectAttempt = 0;
+        this.options.onStatus('connected');
       }
       if (message.type === 'command.result') this.settleRequest(message);
       this.options.onMessage(message);

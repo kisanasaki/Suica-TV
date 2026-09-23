@@ -39,6 +39,13 @@ describe('App remote commands', () => {
     act(() => {
       socket.open();
       socket.receive({
+        type: 'server.hello',
+        protocolVersion: 1,
+        serverVersion: '0.1.0',
+        connectionId: crypto.randomUUID(),
+        role: 'tv',
+      });
+      socket.receive({
         type: 'remote.command',
         requestId: crypto.randomUUID(),
         action: 'navigation.select',

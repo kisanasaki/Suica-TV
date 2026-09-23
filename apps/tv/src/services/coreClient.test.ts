@@ -40,11 +40,23 @@ describe('CoreClient', () => {
     return { client, onStatus, onMessage };
   }
 
+  function completeHandshake(socket: FakeWebSocket) {
+    socket.receive({
+      type: 'server.hello',
+      protocolVersion: 1,
+      serverVersion: '0.1.0',
+      connectionId: crypto.randomUUID(),
+      role: 'tv',
+    });
+  }
+
   it('connects, parses state messages and reports status', () => {
     const { client, onStatus, onMessage } = createClient();
     client.start();
     expect(onStatus).toHaveBeenLastCalledWith('connecting');
     sockets[0].open();
+    expect(onStatus).toHaveBeenLastCalledWith('connecting');
+    completeHandshake(sockets[0]);
     expect(onStatus).toHaveBeenLastCalledWith('connected');
     sockets[0].receive({ type: 'system.state', mode: 'tv' });
     expect(onMessage).toHaveBeenCalledWith({ type: 'system.state', mode: 'tv' });
@@ -72,6 +84,7 @@ describe('CoreClient', () => {
     const { client } = createClient();
     client.start();
     sockets[0].open();
+    completeHandshake(sockets[0]);
     const promise = client.sendModeSwitch('pc');
     const command = JSON.parse(sockets[0].sent[0]);
     expect(command).toMatchObject({ action: 'system.switch_mode', params: { mode: 'pc' } });
@@ -88,6 +101,17 @@ describe('CoreClient', () => {
     const assertion = expect(promise).rejects.toThrow('タイムアウト');
     await vi.advanceTimersByTimeAsync(12_000);
     await assertion;
+    client.stop();
+  });
+
+  it('does not report connected before a valid TV hello', () => {
+    const { client, onStatus } = createClient();
+    client.start();
+    sockets[0].open();
+    sockets[0].receive({ type: 'system.state', mode: 'tv' });
+
+    expect(onStatus).not.toHaveBeenCalledWith('connected');
+    expect(sockets[0].close).toHaveBeenCalledWith(1002, 'invalid server handshake');
     client.stop();
   });
 });

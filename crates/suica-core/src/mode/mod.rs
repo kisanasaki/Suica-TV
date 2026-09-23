@@ -96,6 +96,14 @@ impl ModeManager {
         request_id: Uuid,
     ) -> Result<DisplayMode, CoreError> {
         let _guard = self.transition.try_lock().map_err(|_| CoreError::Busy)?;
+        self.switch_locked(target, request_id).await
+    }
+
+    async fn switch_locked(
+        &self,
+        target: DisplayMode,
+        request_id: Uuid,
+    ) -> Result<DisplayMode, CoreError> {
         let from = self.snapshot().await.mode;
         if from == target {
             return Ok(target);
@@ -146,10 +154,33 @@ impl ModeManager {
         *self.changed_at.write().await = Utc::now();
     }
     pub async fn ensure_tv_home(&self, request_id: Uuid) -> Result<(), CoreError> {
-        if self.snapshot().await.mode != DisplayMode::Tv {
-            self.switch(DisplayMode::Tv, request_id).await?;
+        let _guard = self.transition.try_lock().map_err(|_| CoreError::Busy)?;
+        let from = self.snapshot().await.mode;
+        if from != DisplayMode::Tv {
+            self.switch_locked(DisplayMode::Tv, request_id).await?;
+            return Ok(());
         }
-        self.backend.show_home().await
+        *self.state.write().await = ModeState::Switching {
+            from,
+            to: DisplayMode::Tv,
+            request_id,
+        };
+        match timeout(self.transition_timeout, self.backend.show_home()).await {
+            Ok(Ok(())) => {
+                *self.state.write().await = ModeState::Stable(DisplayMode::Tv);
+                *self.changed_at.write().await = Utc::now();
+                Ok(())
+            }
+            Ok(Err(error)) => {
+                self.recover_after_failure(from, error.to_string()).await;
+                Err(error)
+            }
+            Err(_) => {
+                self.recover_after_failure(from, "home navigation timed out".into())
+                    .await;
+                Err(CoreError::Timeout)
+            }
+        }
     }
     pub async fn send_browser_key(&self, key: BrowserKey) -> Result<(), CoreError> {
         self.backend.send_browser_key(key).await
@@ -163,7 +194,7 @@ impl ModeManager {
 mod tests {
     use super::*;
     use async_trait::async_trait;
-    use std::sync::atomic::{AtomicBool, Ordering};
+    use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
     struct Fake {
         mode: RwLock<DisplayMode>,
     }
@@ -337,5 +368,76 @@ mod tests {
             manager.switch(DisplayMode::Pc, Uuid::new_v4()).await.unwrap(),
             DisplayMode::Pc
         );
+    }
+
+    struct HomeFake {
+        mode: RwLock<DisplayMode>,
+        starts: AtomicUsize,
+        homes: AtomicUsize,
+    }
+
+    #[async_trait]
+    impl SystemBackend for HomeFake {
+        async fn reconcile(&self) -> Result<DisplayMode, CoreError> {
+            Ok(*self.mode.read().await)
+        }
+        async fn start_tv(&self) -> Result<(), CoreError> {
+            self.starts.fetch_add(1, Ordering::SeqCst);
+            *self.mode.write().await = DisplayMode::Tv;
+            Ok(())
+        }
+        async fn stop_tv(&self) -> Result<(), CoreError> {
+            *self.mode.write().await = DisplayMode::Pc;
+            Ok(())
+        }
+        async fn show_home(&self) -> Result<(), CoreError> {
+            self.homes.fetch_add(1, Ordering::SeqCst);
+            tokio::time::sleep(Duration::from_millis(25)).await;
+            Ok(())
+        }
+        async fn send_browser_key(&self, _key: BrowserKey) -> Result<(), CoreError> {
+            Ok(())
+        }
+        async fn type_browser_text(&self, _text: &str) -> Result<(), CoreError> {
+            Ok(())
+        }
+    }
+
+    #[tokio::test]
+    async fn pc_to_home_starts_tv_once_without_restarting_it() {
+        let backend = Arc::new(HomeFake {
+            mode: RwLock::new(DisplayMode::Pc),
+            starts: AtomicUsize::new(0),
+            homes: AtomicUsize::new(0),
+        });
+        let manager = ModeManager::new(backend.clone()).await.unwrap();
+
+        manager.ensure_tv_home(Uuid::new_v4()).await.unwrap();
+
+        assert_eq!(backend.starts.load(Ordering::SeqCst), 1);
+        assert_eq!(backend.homes.load(Ordering::SeqCst), 0);
+        assert_eq!(manager.snapshot().await.mode, DisplayMode::Tv);
+    }
+
+    #[tokio::test]
+    async fn concurrent_home_navigation_is_rejected_as_busy() {
+        let backend = Arc::new(HomeFake {
+            mode: RwLock::new(DisplayMode::Tv),
+            starts: AtomicUsize::new(0),
+            homes: AtomicUsize::new(0),
+        });
+        let manager = Arc::new(ModeManager::new(backend.clone()).await.unwrap());
+        let first = {
+            let manager = manager.clone();
+            tokio::spawn(async move { manager.ensure_tv_home(Uuid::new_v4()).await })
+        };
+        tokio::time::sleep(Duration::from_millis(5)).await;
+
+        assert!(matches!(
+            manager.ensure_tv_home(Uuid::new_v4()).await,
+            Err(CoreError::Busy)
+        ));
+        first.await.unwrap().unwrap();
+        assert_eq!(backend.homes.load(Ordering::SeqCst), 1);
     }
 }

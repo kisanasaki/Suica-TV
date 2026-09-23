@@ -21,7 +21,7 @@ use std::{
 };
 use tokio::{
     sync::mpsc,
-    time::{interval, timeout},
+    time::interval,
 };
 
 #[derive(Deserialize)]
@@ -192,13 +192,10 @@ async fn dispatch(
                 return Err(CoreError::ForbiddenRole);
             }
             if *action == NavigationAction::Home {
-                let result = timeout(
-                    state.config.command_timeout,
-                    state.mode_manager.ensure_tv_home(command.request_id),
-                )
-                .await
-                .map_err(|_| CoreError::Timeout)?;
-                result?;
+                state
+                    .mode_manager
+                    .ensure_tv_home(command.request_id)
+                    .await?;
                 broadcast_mode(state).await;
                 return Ok(());
             } else if state.mode_manager.snapshot().await.mode != DisplayMode::Tv {
