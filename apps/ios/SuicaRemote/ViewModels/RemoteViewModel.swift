@@ -34,6 +34,8 @@ final class RemoteViewModel {
     var host: String
     var portText: String
     var pairingCode = ""
+    var textInput = ""
+    var isTextInputPresented = false
 
     init(
         webSocket: any WebSocketClientProtocol = WebSocketClient(),
@@ -158,6 +160,36 @@ final class RemoteViewModel {
         guard !pendingRequests.values.contains(where: \.isModeSwitch) else { return }
         let command = RemoteCommand(action: .switchMode, params: CommandParams(mode: mode))
         send(command: command, timeout: 12, isModeSwitch: true)
+    }
+
+    func sendTextInput() {
+        guard validateTextInput() else { return }
+        send(
+            command: RemoteCommand(action: .inputText, params: CommandParams(text: textInput)),
+            timeout: 5,
+            isModeSwitch: false
+        )
+        textInput = ""
+    }
+
+    func deleteBackward() {
+        send(command: RemoteCommand(action: .deleteBackward), timeout: 5, isModeSwitch: false)
+    }
+
+    func submitTextInput() {
+        send(command: RemoteCommand(action: .submitText), timeout: 5, isModeSwitch: false)
+    }
+
+    private func validateTextInput() -> Bool {
+        guard !textInput.isEmpty else {
+            alertMessage = String(localized: "入力する文字を入力してください。")
+            return false
+        }
+        guard textInput.unicodeScalars.count <= 200, !textInput.contains(where: \.isNewline) else {
+            alertMessage = String(localized: "文字入力は改行を含めず200文字以内にしてください。")
+            return false
+        }
+        return true
     }
 
     private func send(command: RemoteCommand, timeout: TimeInterval, isModeSwitch: Bool) {

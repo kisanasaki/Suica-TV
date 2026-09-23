@@ -13,6 +13,34 @@ pub trait SystemBackend: Send + Sync {
     async fn start_tv(&self) -> Result<(), CoreError>;
     async fn stop_tv(&self) -> Result<(), CoreError>;
     async fn show_home(&self) -> Result<(), CoreError>;
+    async fn send_browser_key(&self, key: BrowserKey) -> Result<(), CoreError>;
+    async fn type_browser_text(&self, text: &str) -> Result<(), CoreError>;
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum BrowserKey {
+    Up,
+    Down,
+    Left,
+    Right,
+    Enter,
+    Escape,
+    Backspace,
+}
+
+impl BrowserKey {
+    #[cfg(target_os = "linux")]
+    fn name(self) -> &'static str {
+        match self {
+            Self::Up => "Up",
+            Self::Down => "Down",
+            Self::Left => "Left",
+            Self::Right => "Right",
+            Self::Enter => "Return",
+            Self::Escape => "Escape",
+            Self::Backspace => "BackSpace",
+        }
+    }
 }
 
 pub struct SimulatedSystemBackend {
@@ -47,6 +75,12 @@ impl SystemBackend for SimulatedSystemBackend {
         *self.mode.write().await = DisplayMode::Tv;
         Ok(())
     }
+    async fn send_browser_key(&self, _key: BrowserKey) -> Result<(), CoreError> {
+        Ok(())
+    }
+    async fn type_browser_text(&self, _text: &str) -> Result<(), CoreError> {
+        Ok(())
+    }
 }
 
 pub async fn create_system_backend(config: &Config) -> Result<Arc<dyn SystemBackend>, CoreError> {
@@ -79,14 +113,22 @@ fn create_linux(_config: &Config) -> Result<Arc<dyn SystemBackend>, CoreError> {
 
 #[cfg(target_os = "linux")]
 mod linux {
-    use crate::{config::Config, error::CoreError, mode::DisplayMode, system::SystemBackend};
+    use crate::{
+        config::{Config, InputBackendKind},
+        error::CoreError,
+        mode::DisplayMode,
+        system::{BrowserKey, SystemBackend},
+    };
     use async_trait::async_trait;
     use nix::{
         sys::signal::{Signal, kill},
         unistd::Pid,
     };
-    use std::{path::Path, process::Stdio, time::Duration};
-    use tokio::{process::Command, time::sleep};
+    use std::{env, path::Path, process::Stdio, time::Duration};
+    use tokio::{
+        process::Command,
+        time::{sleep, timeout},
+    };
 
     pub struct LinuxSystemBackend {
         config: Config,
@@ -140,6 +182,48 @@ mod linux {
                 sleep(Duration::from_millis(250)).await;
             }
             false
+        }
+
+        fn resolved_input_backend(&self) -> Result<InputBackendKind, CoreError> {
+            match self.config.input_backend {
+                InputBackendKind::Auto => {
+                    if env::var_os("WAYLAND_DISPLAY").is_some()
+                        && self.config.wtype_binary.is_file()
+                    {
+                        Ok(InputBackendKind::Wtype)
+                    } else if env::var_os("DISPLAY").is_some()
+                        && self.config.xdotool_binary.is_file()
+                    {
+                        Ok(InputBackendKind::Xdotool)
+                    } else {
+                        Err(CoreError::BrowserInputFailed(
+                            "no Wayland/X11 input helper is available".into(),
+                        ))
+                    }
+                }
+                InputBackendKind::Disabled => Err(CoreError::BrowserInputFailed(
+                    "browser input is disabled".into(),
+                )),
+                backend => Ok(backend),
+            }
+        }
+
+        async fn run_input(&self, command: &mut Command) -> Result<(), CoreError> {
+            command
+                .stdin(Stdio::null())
+                .stdout(Stdio::null())
+                .stderr(Stdio::null());
+            let status = timeout(Duration::from_secs(3), command.status())
+                .await
+                .map_err(|_| CoreError::BrowserInputFailed("input helper timed out".into()))?
+                .map_err(|error| CoreError::BrowserInputFailed(error.to_string()))?;
+            if status.success() {
+                Ok(())
+            } else {
+                Err(CoreError::BrowserInputFailed(format!(
+                    "input helper exited with {status}"
+                )))
+            }
         }
     }
     #[async_trait]
@@ -212,6 +296,40 @@ mod linux {
         async fn show_home(&self) -> Result<(), CoreError> {
             self.stop_tv().await?;
             self.start_tv().await
+        }
+        async fn send_browser_key(&self, key: BrowserKey) -> Result<(), CoreError> {
+            match self.resolved_input_backend()? {
+                InputBackendKind::Wtype => {
+                    self.run_input(Command::new(&self.config.wtype_binary).args(["-k", key.name()]))
+                        .await
+                }
+                InputBackendKind::Xdotool => {
+                    self.run_input(Command::new(&self.config.xdotool_binary).args([
+                        "key",
+                        "--clearmodifiers",
+                        key.name(),
+                    ]))
+                    .await
+                }
+                InputBackendKind::Auto | InputBackendKind::Disabled => unreachable!(),
+            }
+        }
+        async fn type_browser_text(&self, text: &str) -> Result<(), CoreError> {
+            match self.resolved_input_backend()? {
+                InputBackendKind::Wtype => {
+                    self.run_input(Command::new(&self.config.wtype_binary).arg("--").arg(text))
+                        .await
+                }
+                InputBackendKind::Xdotool => {
+                    self.run_input(
+                        Command::new(&self.config.xdotool_binary)
+                            .args(["type", "--clearmodifiers", "--delay", "0", "--"])
+                            .arg(text),
+                    )
+                    .await
+                }
+                InputBackendKind::Auto | InputBackendKind::Disabled => unreachable!(),
+            }
         }
     }
 }

@@ -67,6 +67,43 @@ final class RemoteViewModelTests: XCTestCase {
         viewModel.stop()
     }
 
+    func testSendsFinalizedUnicodeTextAndClearsDraft() async throws {
+        let client = FakeWebSocketClient()
+        let viewModel = makeViewModel(client: client)
+        viewModel.start()
+        await Task.yield()
+        await client.emit(.hello(protocolVersion: 1, serverVersion: "0.1.0", connectionId: UUID(), role: "remote"))
+        for _ in 0..<5 { await Task.yield() }
+
+        viewModel.textInput = "日本語🍉"
+        viewModel.sendTextInput()
+        for _ in 0..<5 { await Task.yield() }
+
+        let commands = await client.sentCommands
+        XCTAssertEqual(commands.last?.action, .inputText)
+        XCTAssertEqual(commands.last?.params, CommandParams(text: "日本語🍉"))
+        XCTAssertEqual(viewModel.textInput, "")
+        viewModel.stop()
+    }
+
+    func testRejectsTextLongerThanTwoHundredUnicodeScalars() async {
+        let client = FakeWebSocketClient()
+        let viewModel = makeViewModel(client: client)
+        viewModel.start()
+        await Task.yield()
+        await client.emit(.hello(protocolVersion: 1, serverVersion: "0.1.0", connectionId: UUID(), role: "remote"))
+        for _ in 0..<5 { await Task.yield() }
+
+        viewModel.textInput = String(repeating: "あ", count: 201)
+        viewModel.sendTextInput()
+        await Task.yield()
+
+        let sentCount = await client.sentCount()
+        XCTAssertEqual(sentCount, 0)
+        XCTAssertNotNil(viewModel.alertMessage)
+        viewModel.stop()
+    }
+
     private func makeViewModel(client: FakeWebSocketClient) -> RemoteViewModel {
         RemoteViewModel(
             webSocket: client,

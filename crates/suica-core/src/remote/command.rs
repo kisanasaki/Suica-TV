@@ -31,6 +31,9 @@ impl NavigationAction {
 pub enum RemoteAction {
     Navigation(NavigationAction),
     SwitchMode(DisplayMode),
+    InputText(String),
+    DeleteBackward,
+    SubmitText,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -51,7 +54,8 @@ struct CommandDto {
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct ParamsDto {
-    mode: DisplayMode,
+    mode: Option<DisplayMode>,
+    text: Option<String>,
 }
 
 impl RemoteCommand {
@@ -69,11 +73,36 @@ impl RemoteCommand {
             "navigation.back" => RemoteAction::Navigation(NavigationAction::Back),
             "navigation.home" => RemoteAction::Navigation(NavigationAction::Home),
             "system.switch_mode" => {
-                RemoteAction::SwitchMode(dto.params.as_ref().ok_or(CoreError::InvalidMessage)?.mode)
+                let params = dto.params.as_ref().ok_or(CoreError::InvalidMessage)?;
+                RemoteAction::SwitchMode(params.mode.ok_or(CoreError::InvalidMessage)?)
             }
+            "input.text" => {
+                let params = dto.params.as_ref().ok_or(CoreError::InvalidMessage)?;
+                let text = params.text.as_ref().ok_or(CoreError::InvalidMessage)?;
+                if text.is_empty()
+                    || text.chars().count() > 200
+                    || text.chars().any(char::is_control)
+                {
+                    return Err(CoreError::InvalidMessage);
+                }
+                RemoteAction::InputText(text.clone())
+            }
+            "input.delete_backward" => RemoteAction::DeleteBackward,
+            "input.submit" => RemoteAction::SubmitText,
             _ => return Err(CoreError::InvalidCommand),
         };
-        if !matches!(action, RemoteAction::SwitchMode(_)) && dto.params.is_some() {
+        let params_are_valid = match &action {
+            RemoteAction::SwitchMode(_) => dto
+                .params
+                .as_ref()
+                .is_some_and(|params| params.text.is_none()),
+            RemoteAction::InputText(_) => dto
+                .params
+                .as_ref()
+                .is_some_and(|params| params.mode.is_none()),
+            _ => dto.params.is_none(),
+        };
+        if !params_are_valid {
             return Err(CoreError::InvalidMessage);
         }
         Ok(Self {
@@ -122,5 +151,18 @@ mod tests {
             ),
             Err(CoreError::InvalidMessage)
         ));
+    }
+
+    #[test]
+    fn parses_unicode_text_and_rejects_invalid_text() {
+        let command = RemoteCommand::parse(
+            r#"{"type":"remote.command","requestId":"550e8400-e29b-41d4-a716-446655440000","action":"input.text","params":{"text":"すいか🍉"}}"#,
+        )
+        .unwrap();
+        assert_eq!(command.action, RemoteAction::InputText("すいか🍉".into()));
+        assert!(RemoteCommand::parse(
+            r#"{"type":"remote.command","requestId":"550e8400-e29b-41d4-a716-446655440000","action":"input.text","params":{"text":""}}"#,
+        )
+        .is_err());
     }
 }

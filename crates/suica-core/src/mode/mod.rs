@@ -1,4 +1,7 @@
-use crate::{error::CoreError, system::SystemBackend};
+use crate::{
+    error::CoreError,
+    system::{BrowserKey, SystemBackend},
+};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -114,6 +117,12 @@ impl ModeManager {
         }
         self.backend.show_home().await
     }
+    pub async fn send_browser_key(&self, key: BrowserKey) -> Result<(), CoreError> {
+        self.backend.send_browser_key(key).await
+    }
+    pub async fn type_browser_text(&self, text: &str) -> Result<(), CoreError> {
+        self.backend.type_browser_text(text).await
+    }
 }
 
 #[cfg(test)]
@@ -137,6 +146,12 @@ mod tests {
             Ok(())
         }
         async fn show_home(&self) -> Result<(), CoreError> {
+            Ok(())
+        }
+        async fn send_browser_key(&self, _key: BrowserKey) -> Result<(), CoreError> {
+            Ok(())
+        }
+        async fn type_browser_text(&self, _text: &str) -> Result<(), CoreError> {
             Ok(())
         }
     }
@@ -172,6 +187,12 @@ mod tests {
         async fn show_home(&self) -> Result<(), CoreError> {
             Ok(())
         }
+        async fn send_browser_key(&self, _key: BrowserKey) -> Result<(), CoreError> {
+            Ok(())
+        }
+        async fn type_browser_text(&self, _text: &str) -> Result<(), CoreError> {
+            Ok(())
+        }
     }
 
     #[tokio::test]
@@ -200,6 +221,12 @@ mod tests {
             Ok(())
         }
         async fn show_home(&self) -> Result<(), CoreError> {
+            Ok(())
+        }
+        async fn send_browser_key(&self, _key: BrowserKey) -> Result<(), CoreError> {
+            Ok(())
+        }
+        async fn type_browser_text(&self, _text: &str) -> Result<(), CoreError> {
             Ok(())
         }
     }

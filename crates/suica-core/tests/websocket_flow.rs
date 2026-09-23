@@ -94,7 +94,37 @@ async fn remote_commands_reach_tv_and_tv_can_switch_to_pc() {
     assert_eq!(result["requestId"], navigation_id.to_string());
     assert_eq!(result["ok"], true);
 
+    drop(tv);
+    tokio::time::sleep(Duration::from_millis(25)).await;
+    for action in [
+        "navigation.down",
+        "input.text",
+        "input.delete_backward",
+        "input.submit",
+    ] {
+        let request_id = Uuid::new_v4();
+        let params = (action == "input.text").then(|| json!({"text": "日本語🍉"}));
+        let mut command = json!({
+            "type": "remote.command",
+            "requestId": request_id,
+            "action": action
+        });
+        if let Some(params) = params {
+            command["params"] = params;
+        }
+        remote
+            .send(Message::Text(command.to_string().into()))
+            .await
+            .unwrap();
+        let result = receive_json(&mut remote).await;
+        assert_eq!(result["requestId"], request_id.to_string());
+        assert_eq!(result["ok"], true);
+    }
+
     let switch_id = Uuid::new_v4();
+    let (mut tv, _) = connect_async(&tv_url).await.unwrap();
+    receive_json(&mut tv).await;
+    receive_json(&mut tv).await;
     tv.send(Message::Text(
         json!({
             "type": "remote.command",

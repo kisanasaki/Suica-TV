@@ -3,6 +3,7 @@ use crate::{
     mode::DisplayMode,
     remote::{ErrorBody, NavigationAction, RemoteAction, RemoteCommand, ServerMessage},
     state::{AppState, ClientRole, CommandRateLimiter, RequestDecision, is_loopback},
+    system::BrowserKey,
 };
 use axum::{
     extract::{
@@ -185,12 +186,12 @@ async fn dispatch(
     role: ClientRole,
     command: &RemoteCommand,
 ) -> Result<(), CoreError> {
-    match command.action {
+    match &command.action {
         RemoteAction::Navigation(action) => {
             if role != ClientRole::Remote {
                 return Err(CoreError::ForbiddenRole);
             }
-            if action == NavigationAction::Home {
+            if *action == NavigationAction::Home {
                 let result = timeout(
                     state.config.command_timeout,
                     state.mode_manager.ensure_tv_home(command.request_id),
@@ -203,16 +204,26 @@ async fn dispatch(
             } else if state.mode_manager.snapshot().await.mode != DisplayMode::Tv {
                 return Err(CoreError::InvalidState);
             }
-            state
+            let forwarded = state
                 .clients
                 .send_tv(ServerMessage::RemoteCommand {
                     request_id: command.request_id,
                     action: action.wire_name().into(),
                 })
-                .await
+                .await;
+            match forwarded {
+                Ok(()) => Ok(()),
+                Err(CoreError::TvClientUnavailable) => {
+                    state
+                        .mode_manager
+                        .send_browser_key(browser_key(*action))
+                        .await
+                }
+                Err(error) => Err(error),
+            }
         }
         RemoteAction::SwitchMode(target) => {
-            if role == ClientRole::Tv && target != DisplayMode::Pc {
+            if role == ClientRole::Tv && *target != DisplayMode::Pc {
                 return Err(CoreError::ForbiddenRole);
             }
             let before = state.mode_manager.snapshot().await;
@@ -221,20 +232,57 @@ async fn dispatch(
                 .broadcast(ServerMessage::SystemState {
                     mode: before.mode,
                     transitioning: true,
-                    target_mode: Some(target),
+                    target_mode: Some(*target),
                     changed_at: before.changed_at,
                 })
                 .await;
             let result = timeout(
                 state.config.command_timeout,
-                state.mode_manager.switch(target, command.request_id),
+                state.mode_manager.switch(*target, command.request_id),
             )
             .await
             .map_err(|_| CoreError::Timeout)?;
             broadcast_mode(state).await;
             result.map(|_| ())
         }
+        RemoteAction::InputText(text) => {
+            ensure_remote_tv_mode(state, role).await?;
+            state.mode_manager.type_browser_text(text).await
+        }
+        RemoteAction::DeleteBackward => {
+            ensure_remote_tv_mode(state, role).await?;
+            state
+                .mode_manager
+                .send_browser_key(BrowserKey::Backspace)
+                .await
+        }
+        RemoteAction::SubmitText => {
+            ensure_remote_tv_mode(state, role).await?;
+            state.mode_manager.send_browser_key(BrowserKey::Enter).await
+        }
     }
+}
+
+fn browser_key(action: NavigationAction) -> BrowserKey {
+    match action {
+        NavigationAction::Up => BrowserKey::Up,
+        NavigationAction::Down => BrowserKey::Down,
+        NavigationAction::Left => BrowserKey::Left,
+        NavigationAction::Right => BrowserKey::Right,
+        NavigationAction::Select => BrowserKey::Enter,
+        NavigationAction::Back => BrowserKey::Escape,
+        NavigationAction::Home => unreachable!("home is handled before browser input"),
+    }
+}
+
+async fn ensure_remote_tv_mode(state: &AppState, role: ClientRole) -> Result<(), CoreError> {
+    if role != ClientRole::Remote {
+        return Err(CoreError::ForbiddenRole);
+    }
+    if state.mode_manager.snapshot().await.mode != DisplayMode::Tv {
+        return Err(CoreError::InvalidState);
+    }
+    Ok(())
 }
 
 async fn broadcast_mode(state: &AppState) {

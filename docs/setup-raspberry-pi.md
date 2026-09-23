@@ -19,7 +19,7 @@ Suica Coreはユーザーサービスとして動く。デスクトップへ自�
 ```bash
 sudo apt update
 sudo apt full-upgrade -y
-sudo apt install -y git curl build-essential pkg-config nodejs npm chromium
+sudo apt install -y git curl build-essential pkg-config nodejs npm chromium wtype xdotool
 ```
 
 必要ならカーソルを隠すために`unclutter`を追加する。
@@ -105,6 +105,9 @@ pid_file = "/home/pi/.local/share/suica-tv/chromium.pid"
 token_store = "/home/pi/.local/share/suica-tv/tokens.json"
 pairing_code = "CHANGE_ME"
 system_backend = "auto"
+input_backend = "auto"
+wtype_binary = "/usr/bin/wtype"
+xdotool_binary = "/usr/bin/xdotool"
 ```
 
 `CHANGE_ME`のままではCoreは起動しない。設定値は環境変数でも上書きできる。例: `SUICA_CORE_PAIRING_CODE=123456`。コード、発行済みトークン、AuthorizationヘッダーをログやGitへ残さない。
@@ -205,3 +208,21 @@ hostname -I
 ```
 
 家庭内LAN外へ3030番ポートを公開しない。v0.1はHTTPS/WSSを含まない。
+
+### YouTube表示中にリモコン操作できない
+
+CoreはWaylandでは`wtype`、X11では`xdotool`を使い、Reactが外部ページへ遷移した後の
+十字キー・決定・戻る・文字入力をChromiumへ送る。次を確認する。
+
+```bash
+command -v wtype
+command -v xdotool
+systemctl --user show-environment | grep -E 'WAYLAND_DISPLAY|DISPLAY|XDG_RUNTIME_DIR'
+```
+
+画面セッションの環境変数が表示されない場合は、そのセッション内で次を実行してCoreを再起動する。
+
+```bash
+systemctl --user import-environment WAYLAND_DISPLAY DISPLAY XDG_RUNTIME_DIR
+systemctl --user restart suica-core
+```

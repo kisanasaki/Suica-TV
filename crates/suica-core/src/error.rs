@@ -30,6 +30,8 @@ pub enum CoreError {
     ModeSwitchFailed(String),
     #[error("process control failed: {0}")]
     ProcessControlFailed(String),
+    #[error("browser input failed: {0}")]
+    BrowserInputFailed(String),
     #[error("configuration error: {0}")]
     Config(String),
     #[error(transparent)]
@@ -55,6 +57,7 @@ impl CoreError {
             Self::InvalidState => "invalid_state",
             Self::Timeout => "timeout",
             Self::ModeSwitchFailed(_) | Self::ProcessControlFailed(_) => "mode_switch_failed",
+            Self::BrowserInputFailed(_) => "browser_input_failed",
             _ => "internal_error",
         }
     }
@@ -67,6 +70,7 @@ impl CoreError {
                 | Self::Timeout
                 | Self::ModeSwitchFailed(_)
                 | Self::ProcessControlFailed(_)
+                | Self::BrowserInputFailed(_)
                 | Self::Internal(_)
         )
     }
@@ -84,6 +88,7 @@ impl CoreError {
             Self::ModeSwitchFailed(_) | Self::ProcessControlFailed(_) => {
                 "表示モードを切り替えられませんでした。"
             }
+            Self::BrowserInputFailed(_) => "ブラウザを操作できませんでした。",
             _ => "内部エラーが発生しました。",
         }
     }

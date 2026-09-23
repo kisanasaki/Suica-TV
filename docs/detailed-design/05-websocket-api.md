@@ -85,6 +85,9 @@ Upgrade成功後、Coreは最初のメッセージとして`server.hello`、続�
 | `navigation.back` | なし | 可 | 不可 |
 | `navigation.home` | なし | 可 | 不可 |
 | `system.switch_mode` | `mode` | 可 | PCへの切り替えのみ可 |
+| `input.text` | `text` | 可 | 不可 |
+| `input.delete_backward` | なし | 可 | 不可 |
+| `input.submit` | なし | 可 | 不可 |
 
 `system.switch_mode`:
 
@@ -100,6 +103,10 @@ Upgrade成功後、Coreは最初のメッセージとして`server.hello`、続�
 ```
 
 TVロールからの`system.switch_mode`は、ループバック接続かつ`params.mode`が`pc`の場合だけ許可する。TVロールからのTV切り替えおよびその他のコマンド送信は拒否する。
+
+`input.text`の`text`は1〜200文字とし、制御文字を拒否する。検索語などの秘密でない入力も
+ログへ出力しない。ReactのTV接続がないTVモードでは、Coreが`navigation.*`をChromiumの
+キーボード操作へ変換する。`input.*`は常にCoreからChromiumへ直接入力する。
 
 ## 7. CoreからClientへのメッセージ
 

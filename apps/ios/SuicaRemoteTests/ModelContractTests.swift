@@ -20,6 +20,15 @@ final class ModelContractTests: XCTestCase {
         XCTAssertEqual(params["mode"], "pc")
     }
 
+    func testUnicodeTextCommandIncludesOnlyTextParam() throws {
+        let command = RemoteCommand(action: .inputText, params: CommandParams(text: "すいか🍉"))
+        let data = try JSONEncoder().encode(command)
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        XCTAssertEqual(object["action"] as? String, "input.text")
+        let params = try XCTUnwrap(object["params"] as? [String: String])
+        XCTAssertEqual(params, ["text": "すいか🍉"])
+    }
+
     func testDecodesAllServerMessagesAndIgnoresAddedFields() throws {
         let decoder = JSONDecoder()
         let hello = try decoder.decode(ServerMessage.self, from: Data(#"{"type":"server.hello","protocolVersion":1,"serverVersion":"0.1.0","connectionId":"550e8400-e29b-41d4-a716-446655440000","role":"remote","future":true}"#.utf8))

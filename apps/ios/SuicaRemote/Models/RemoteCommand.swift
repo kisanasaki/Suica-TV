@@ -21,10 +21,35 @@ enum RemoteAction: String, Codable, CaseIterable, Sendable {
     case back = "navigation.back"
     case home = "navigation.home"
     case switchMode = "system.switch_mode"
+    case inputText = "input.text"
+    case deleteBackward = "input.delete_backward"
+    case submitText = "input.submit"
 }
 
 struct CommandParams: Encodable, Equatable, Sendable {
-    let mode: DisplayMode
+    let mode: DisplayMode?
+    let text: String?
+
+    init(mode: DisplayMode) {
+        self.mode = mode
+        text = nil
+    }
+
+    init(text: String) {
+        mode = nil
+        self.text = text
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeIfPresent(mode, forKey: .mode)
+        try container.encodeIfPresent(text, forKey: .text)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case mode
+        case text
+    }
 }
 
 struct RemoteCommand: Encodable, Equatable, Sendable {

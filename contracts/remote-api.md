@@ -86,6 +86,9 @@ GET /ws?role=remote|tv&protocolVersion=1
 - `navigation.back`
 - `navigation.home`
 - `system.switch_mode`
+- `input.text`
+- `input.delete_backward`
+- `input.submit`
 
 モード切り替え:
 
@@ -99,6 +102,22 @@ GET /ws?role=remote|tv&protocolVersion=1
 ```
 
 TVロールは`system.switch_mode`の`pc`だけを送信できる。Remoteロールの`navigation.*`はTVロールへ中継される。
+ReactのTVロールが接続されていないTVモードでは、`navigation.*`（ホームを除く）を
+CoreがChromiumのキーボード操作へフォールバックする。`input.*`はRemoteロールだけが送信でき、
+CoreからChromiumへ直接入力される。
+
+文字入力（空文字、制御文字、201文字以上は拒否）:
+
+```json
+{
+  "type": "remote.command",
+  "requestId": "550e8400-e29b-41d4-a716-446655440000",
+  "action": "input.text",
+  "params": { "text": "すいか🍉" }
+}
+```
+
+`input.delete_backward`は1文字削除、`input.submit`はEnterキーによる検索実行を行う。
 
 成功応答:
 
@@ -136,6 +155,7 @@ TVロールは`system.switch_mode`の`pc`だけを送信できる。Remoteロー
 - `busy`
 - `tv_client_unavailable`
 - `mode_switch_failed`
+- `browser_input_failed`
 - `timeout`
 - `internal_error`
 

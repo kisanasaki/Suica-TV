@@ -156,7 +156,13 @@ pub struct Config {
 ```rust
 pub enum NavigationAction { Up, Down, Left, Right, Select, Back, Home }
 pub enum SystemAction { SwitchMode { mode: DisplayMode } }
-pub enum RemoteAction { Navigation(NavigationAction), System(SystemAction) }
+pub enum RemoteAction {
+    Navigation(NavigationAction),
+    System(SystemAction),
+    InputText(String),
+    DeleteBackward,
+    SubmitText,
+}
 
 pub struct RemoteCommand {
     pub request_id: Uuid,
@@ -182,8 +188,10 @@ Serdeの独自デシリアライズまたはDTO変換により、文字列形式
 | 操作 | 条件 | 処理 |
 |---|---|---|
 | Navigation | TVクライアント接続中、TVモード | TVへ転送 |
+| Navigation | TVクライアント未接続、TVモード | Chromiumへキー入力を送信 |
 | Home | 任意モード | TVモード保証後、ホームURLを表示 |
 | SwitchMode | ModeManagerがidle | ModeManagerへ委譲 |
+| InputText / DeleteBackward / SubmitText | TVモード | Chromiumへ直接入力 |
 
 同じ`requestId`を過去60秒以内に処理済みの場合は、保存済み結果を返して二重実行を防止する。キャッシュ上限は1000件とする。
 

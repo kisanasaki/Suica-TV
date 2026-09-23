@@ -77,6 +77,9 @@ enum RemoteAction: String, Codable {
     case back = "navigation.back"
     case home = "navigation.home"
     case switchMode = "system.switch_mode"
+    case inputText = "input.text"
+    case deleteBackward = "input.delete_backward"
+    case submitText = "input.submit"
 }
 
 struct RemoteCommand: Encodable {
@@ -99,10 +102,24 @@ struct RemoteCommand: Encodable {
 | 戻る | `navigation.back`を送信する。 |
 | ホーム | `navigation.home`を送信する。PCモード時も有効とする。 |
 | 設定 | SettingsViewをモーダル表示する。 |
+| 文字入力 | TextInputViewをモーダル表示する。 |
 
 未接続中は設定ボタンを除く操作を無効化する。ボタン押下時は軽い触覚フィードバックを発生させる。
 
-### 5.2 SettingsView
+### 5.2 TextInputView
+
+日本語IMEの変換途中では送信せず、「文字を送信」を押した時点の確定文字列だけを送信する。
+入力は1〜200文字かつ改行なしとする。誤入力を防ぐため、利用者がテレビ画面の検索欄を
+選択済みであることを確認するまで、送信・削除・検索実行を無効化する。
+
+| UI要素 | 動作 |
+|---|---|
+| 文字を送信 | `input.text`を送信し、成功した送信開始後に下書きを消去する。 |
+| 1文字削除 | `input.delete_backward`を送信する。 |
+| 検索を実行 | `input.submit`を送信する。 |
+| キャンセル | 送信せず画面を閉じる。 |
+
+### 5.3 SettingsView
 
 | UI要素 | 入力規則 |
 |---|---|
