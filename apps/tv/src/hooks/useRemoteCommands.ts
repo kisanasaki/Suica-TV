@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { CoreClient } from '../services/coreClient';
 import type { ServerMessage } from '../services/messages';
 import type { ConnectionStatus, NavigationAction } from '../state/types';
@@ -11,17 +11,18 @@ interface Options {
 }
 
 export function useRemoteCommands(options: Options) {
-  const client = useMemo(
+  const callbacks = useRef(options);
+  callbacks.current = options;
+  const [client] = useState(
     () =>
       new CoreClient({
-        onStatus: options.onStatus,
+        onStatus: (status) => callbacks.current.onStatus(status),
         onMessage: (message: ServerMessage) => {
-          if (message.type === 'remote.command') options.onNavigation(message.action);
-          if (message.type === 'system.state') options.onMode(message.mode);
-          if (message.type === 'error') options.onError(message.error.message);
+          if (message.type === 'remote.command') callbacks.current.onNavigation(message.action);
+          if (message.type === 'system.state') callbacks.current.onMode(message.mode);
+          if (message.type === 'error') callbacks.current.onError(message.error.message);
         },
       }),
-    [options.onError, options.onMode, options.onNavigation, options.onStatus],
   );
 
   useEffect(() => {

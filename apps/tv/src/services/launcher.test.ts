@@ -8,9 +8,9 @@ describe('launchExternalUrl', () => {
     expect(navigate).toHaveBeenCalledWith('https://example.com/path');
   });
 
-  it('uses the standard YouTube URL expected by Chromium', async () => {
+  it('uses the television-optimized YouTube URL expected by kiosk Chromium', async () => {
     const { MENU_ITEMS } = await import('../config/menu');
-    expect(MENU_ITEMS.find((item) => item.id === 'youtube')?.target).toBe('https://www.youtube.com/');
+    expect(MENU_ITEMS.find((item) => item.id === 'youtube')?.target).toBe('https://www.youtube.com/tv');
   });
 
   it('rejects non-HTTPS URLs', () => {

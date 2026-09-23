@@ -43,9 +43,13 @@ impl ClientRegistry {
     ) -> Result<(Uuid, mpsc::Receiver<ServerMessage>), CoreError> {
         let mut all = self.inner.write().await;
         let count = all.values().filter(|c| c.role == role).count();
-        let max = if role == ClientRole::Tv { 1 } else { 4 };
-        if count >= max {
+        if role == ClientRole::Remote && count >= 4 {
             return Err(CoreError::ForbiddenRole);
+        }
+        // A home navigation restarts Chromium. Replace the stale TV connection so the
+        // newly loaded React application can reconnect without waiting for socket cleanup.
+        if role == ClientRole::Tv {
+            all.retain(|_, client| client.role != ClientRole::Tv);
         }
         let id = Uuid::new_v4();
         let (tx, rx) = mpsc::channel(32);
@@ -177,13 +181,8 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn connection_limits_are_released_on_remove() {
+    async fn remote_connection_limits_are_released_on_remove() {
         let clients = ClientRegistry::default();
-        let (tv, _) = clients.register(ClientRole::Tv).await.unwrap();
-        assert!(clients.register(ClientRole::Tv).await.is_err());
-        clients.remove(tv).await;
-        assert!(clients.register(ClientRole::Tv).await.is_ok());
-
         let mut remotes = Vec::new();
         for _ in 0..4 {
             remotes.push(clients.register(ClientRole::Remote).await.unwrap().0);
@@ -191,6 +190,25 @@ mod tests {
         assert!(clients.register(ClientRole::Remote).await.is_err());
         clients.remove(remotes[0]).await;
         assert!(clients.register(ClientRole::Remote).await.is_ok());
+    }
+
+    #[tokio::test]
+    async fn new_tv_connection_replaces_the_previous_connection() {
+        let clients = ClientRegistry::default();
+        let (_, mut previous) = clients.register(ClientRole::Tv).await.unwrap();
+        let (_, mut current) = clients.register(ClientRole::Tv).await.unwrap();
+
+        assert!(previous.recv().await.is_none());
+        let message = ServerMessage::Shutdown {
+            retry_after_seconds: 3,
+        };
+        clients.send_tv(message).await.unwrap();
+        assert!(matches!(
+            current.recv().await,
+            Some(ServerMessage::Shutdown {
+                retry_after_seconds: 3
+            })
+        ));
     }
 
     #[tokio::test]

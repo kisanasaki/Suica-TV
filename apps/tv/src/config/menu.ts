@@ -7,7 +7,7 @@ export const MENU_ITEMS: readonly MenuItem[] = [
     description: '動画をテレビで楽しむ',
     icon: '▶',
     kind: 'external-url',
-    target: 'https://www.youtube.com/',
+    target: 'https://www.youtube.com/tv',
     row: 0,
     column: 0,
   },

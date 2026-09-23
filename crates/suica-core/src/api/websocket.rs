@@ -115,7 +115,13 @@ async fn handle_socket(mut socket: WebSocket, state: AppState, role: ClientRole)
     let connection = async {
         loop {
             tokio::select! {
-                Some(msg)=outbound.recv()=>{if sender.send(Message::Text(msg.text().into())).await.is_err(){break}},
+                msg=outbound.recv()=>{match msg {
+                    Some(msg) => if sender.send(Message::Text(msg.text().into())).await.is_err(){break},
+                    None => {
+                        let _=sender.send(Message::Close(Some(CloseFrame{code:1001,reason:"replaced by a new connection".into()}))).await;
+                        break
+                    },
+                }},
                 Some(msg)=local_rx.recv()=>{if sender.send(Message::Text(msg.text().into())).await.is_err(){break}},
                 incoming=receiver.next()=>{match incoming{
                     Some(Ok(Message::Text(text)))=>{if !limiter.allow(){let e=CoreError::Busy;let _=tx.try_send(ServerMessage::Error{error:ErrorBody::from_error(&e)});continue}match RemoteCommand::parse(&text){Ok(command)=>{let st=state.clone();let out=tx.clone();tokio::spawn(async move{process_command(st,role,command,out).await;});},Err(e)=>{let _=tx.try_send(ServerMessage::Error{error:ErrorBody::from_error(&e)});}}},

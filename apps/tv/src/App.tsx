@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { ConnectionBadge } from './components/ConnectionBadge';
 import { MENU_ITEMS } from './config/menu';
 import { useKeyboardNavigation } from './hooks/useKeyboardNavigation';
@@ -6,11 +6,13 @@ import { useRemoteCommands } from './hooks/useRemoteCommands';
 import { HomePage } from './pages/HomePage';
 import { SettingsPage } from './pages/SettingsPage';
 import { launchExternalUrl } from './services/launcher';
+import type { CoreClient } from './services/coreClient';
 import { AppStateProvider, useAppState } from './state/AppStateContext';
 import type { MenuItemId, NavigationAction } from './state/types';
 
 function TvApplication() {
   const { state, dispatch } = useAppState();
+  const coreClientRef = useRef<CoreClient | null>(null);
 
   const showError = useCallback((message: string) => dispatch({ type: 'show-error', message }), [dispatch]);
   const handleNavigation = useCallback((action: NavigationAction) => {
@@ -18,13 +20,6 @@ function TvApplication() {
     else if (action === 'navigation.back') dispatch({ type: 'go-back' });
     else if (action !== 'navigation.select') dispatch({ type: 'navigate', direction: action });
   }, [dispatch]);
-
-  const coreClient = useRemoteCommands({
-    onStatus: useCallback((status) => dispatch({ type: 'connection-changed', status }), [dispatch]),
-    onNavigation: handleNavigation,
-    onMode: useCallback((mode) => dispatch({ type: 'mode-changed', mode }), [dispatch]),
-    onError: showError,
-  });
 
   const selectItem = useCallback(async (id: MenuItemId) => {
     const item = MENU_ITEMS.find((candidate) => candidate.id === id);
@@ -38,6 +33,11 @@ function TvApplication() {
       return;
     }
     if (state.connection !== 'connected' || state.modeSwitchPending) return;
+    const coreClient = coreClientRef.current;
+    if (!coreClient) {
+      showError('Suica Coreに接続されていません。');
+      return;
+    }
     dispatch({ type: 'mode-switch-started' });
     try {
       await coreClient.sendModeSwitch('pc');
@@ -46,7 +46,7 @@ function TvApplication() {
     } finally {
       dispatch({ type: 'mode-switch-finished' });
     }
-  }, [coreClient, dispatch, showError, state.connection, state.modeSwitchPending]);
+  }, [dispatch, showError, state.connection, state.modeSwitchPending]);
 
   const processAction = useCallback((action: NavigationAction) => {
     if (action === 'navigation.select') {
@@ -55,6 +55,20 @@ function TvApplication() {
     }
     handleNavigation(action);
   }, [handleNavigation, selectItem, state.page, state.selectedId]);
+
+  const coreClient = useRemoteCommands({
+    onStatus: useCallback((status) => dispatch({ type: 'connection-changed', status }), [dispatch]),
+    onNavigation: processAction,
+    onMode: useCallback((mode) => dispatch({ type: 'mode-changed', mode }), [dispatch]),
+    onError: showError,
+  });
+
+  useEffect(() => {
+    coreClientRef.current = coreClient;
+    return () => {
+      if (coreClientRef.current === coreClient) coreClientRef.current = null;
+    };
+  }, [coreClient]);
 
   useKeyboardNavigation(processAction);
 
