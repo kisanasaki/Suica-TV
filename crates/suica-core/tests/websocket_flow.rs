@@ -94,6 +94,24 @@ async fn remote_commands_reach_tv_and_tv_can_switch_to_pc() {
     assert_eq!(result["requestId"], navigation_id.to_string());
     assert_eq!(result["ok"], true);
 
+    let media_on_home_id = Uuid::new_v4();
+    remote
+        .send(Message::Text(
+            json!({
+                "type": "remote.command",
+                "requestId": media_on_home_id,
+                "action": "media.play_pause"
+            })
+            .to_string()
+            .into(),
+        ))
+        .await
+        .unwrap();
+    let media_on_home = receive_json(&mut remote).await;
+    assert_eq!(media_on_home["requestId"], media_on_home_id.to_string());
+    assert_eq!(media_on_home["ok"], false);
+    assert_eq!(media_on_home["error"]["code"], "invalid_state");
+
     drop(tv);
     tokio::time::sleep(Duration::from_millis(25)).await;
     for action in [
@@ -104,6 +122,10 @@ async fn remote_commands_reach_tv_and_tv_can_switch_to_pc() {
         "input.text",
         "input.delete_backward",
         "input.submit",
+        "media.play_pause",
+        "media.seek_backward",
+        "media.seek_forward",
+        "media.fullscreen_toggle",
     ] {
         let request_id = Uuid::new_v4();
         let params = match action {

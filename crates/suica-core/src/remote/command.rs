@@ -13,6 +13,14 @@ pub enum NavigationAction {
     Home,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum MediaAction {
+    PlayPause,
+    SeekBackward,
+    SeekForward,
+    FullscreenToggle,
+}
+
 impl NavigationAction {
     pub fn wire_name(self) -> &'static str {
         match self {
@@ -30,6 +38,7 @@ impl NavigationAction {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum RemoteAction {
     Navigation(NavigationAction),
+    Media(MediaAction),
     SwitchMode(DisplayMode),
     Scroll { dx: i32, dy: i32 },
     PointerMove { dx: i32, dy: i32 },
@@ -77,6 +86,10 @@ impl RemoteCommand {
             "navigation.select" => RemoteAction::Navigation(NavigationAction::Select),
             "navigation.back" => RemoteAction::Navigation(NavigationAction::Back),
             "navigation.home" => RemoteAction::Navigation(NavigationAction::Home),
+            "media.play_pause" => RemoteAction::Media(MediaAction::PlayPause),
+            "media.seek_backward" => RemoteAction::Media(MediaAction::SeekBackward),
+            "media.seek_forward" => RemoteAction::Media(MediaAction::SeekForward),
+            "media.fullscreen_toggle" => RemoteAction::Media(MediaAction::FullscreenToggle),
             "system.switch_mode" => {
                 let params = dto.params.as_ref().ok_or(CoreError::InvalidMessage)?;
                 RemoteAction::SwitchMode(params.mode.ok_or(CoreError::InvalidMessage)?)
@@ -230,5 +243,26 @@ mod tests {
         )
         .unwrap();
         assert_eq!(click.action, RemoteAction::PointerClick);
+    }
+
+    #[test]
+    fn parses_media_actions_without_params() {
+        for (action, expected) in [
+            ("media.play_pause", MediaAction::PlayPause),
+            ("media.seek_backward", MediaAction::SeekBackward),
+            ("media.seek_forward", MediaAction::SeekForward),
+            ("media.fullscreen_toggle", MediaAction::FullscreenToggle),
+        ] {
+            let message = format!(
+                r#"{{"type":"remote.command","requestId":"550e8400-e29b-41d4-a716-446655440000","action":"{action}"}}"#
+            );
+            assert_eq!(
+                RemoteCommand::parse(&message).unwrap().action,
+                RemoteAction::Media(expected)
+            );
+        }
+        assert!(RemoteCommand::parse(
+            r#"{"type":"remote.command","requestId":"550e8400-e29b-41d4-a716-446655440000","action":"media.play_pause","params":{"dx":1}}"#
+        ).is_err());
     }
 }

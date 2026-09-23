@@ -91,6 +91,13 @@ Upgrade成功後、Coreは最初のメッセージとして`server.hello`、続�
 | `input.text` | `text` | 可 | 不可 |
 | `input.delete_backward` | なし | 可 | 不可 |
 | `input.submit` | なし | 可 | 不可 |
+| `media.play_pause` | なし | 可 | 不可 |
+| `media.seek_backward` | なし | 可 | 不可 |
+| `media.seek_forward` | なし | 可 | 不可 |
+| `media.fullscreen_toggle` | なし | 可 | 不可 |
+
+メディア操作はTVモードが安定し、ReactホームのTV接続が存在しない外部ページ表示時だけ受け付ける。
+CoreはYouTube互換の固定キーを配送し、ページ上での効果までは成功判定に含めない。
 
 `system.switch_mode`:
 

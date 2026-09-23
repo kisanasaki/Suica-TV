@@ -37,6 +37,14 @@ pub struct ClientRegistry {
     inner: Arc<RwLock<HashMap<Uuid, ClientEntry>>>,
 }
 impl ClientRegistry {
+    pub async fn has_tv(&self) -> bool {
+        self.inner
+            .read()
+            .await
+            .values()
+            .any(|client| client.role == ClientRole::Tv)
+    }
+
     pub async fn register(
         &self,
         role: ClientRole,
@@ -209,6 +217,16 @@ mod tests {
                 retry_after_seconds: 3
             })
         ));
+    }
+
+    #[tokio::test]
+    async fn reports_whether_a_tv_client_is_connected() {
+        let clients = ClientRegistry::default();
+        assert!(!clients.has_tv().await);
+        let (id, _) = clients.register(ClientRole::Tv).await.unwrap();
+        assert!(clients.has_tv().await);
+        clients.remove(id).await;
+        assert!(!clients.has_tv().await);
     }
 
     #[tokio::test]

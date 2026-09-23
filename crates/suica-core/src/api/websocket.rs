@@ -1,7 +1,9 @@
 use crate::{
     error::CoreError,
     mode::DisplayMode,
-    remote::{ErrorBody, NavigationAction, RemoteAction, RemoteCommand, ServerMessage},
+    remote::{
+        ErrorBody, MediaAction, NavigationAction, RemoteAction, RemoteCommand, ServerMessage,
+    },
     state::{AppState, ClientRole, CommandRateLimiter, RequestDecision, is_loopback},
     system::BrowserKey,
 };
@@ -216,6 +218,16 @@ async fn dispatch(
                 Err(error) => Err(error),
             }
         }
+        RemoteAction::Media(action) => {
+            ensure_remote_stable_tv_mode(state, role).await?;
+            if state.clients.has_tv().await {
+                return Err(CoreError::InvalidState);
+            }
+            state
+                .mode_manager
+                .send_browser_key(media_key(*action))
+                .await
+        }
         RemoteAction::SwitchMode(target) => {
             if role == ClientRole::Tv && *target != DisplayMode::Pc {
                 return Err(CoreError::ForbiddenRole);
@@ -276,6 +288,15 @@ fn browser_key(action: NavigationAction) -> BrowserKey {
     }
 }
 
+fn media_key(action: MediaAction) -> BrowserKey {
+    match action {
+        MediaAction::PlayPause => BrowserKey::MediaPlayPause,
+        MediaAction::SeekBackward => BrowserKey::MediaSeekBackward,
+        MediaAction::SeekForward => BrowserKey::MediaSeekForward,
+        MediaAction::FullscreenToggle => BrowserKey::MediaFullscreenToggle,
+    }
+}
+
 async fn ensure_remote_tv_mode(state: &AppState, role: ClientRole) -> Result<(), CoreError> {
     if role != ClientRole::Remote {
         return Err(CoreError::ForbiddenRole);
@@ -328,5 +349,25 @@ mod tests {
     #[test]
     fn external_page_back_uses_browser_history() {
         assert_eq!(browser_key(NavigationAction::Back), BrowserKey::HistoryBack);
+    }
+
+    #[test]
+    fn media_actions_use_fixed_browser_shortcuts() {
+        assert_eq!(
+            media_key(MediaAction::PlayPause),
+            BrowserKey::MediaPlayPause
+        );
+        assert_eq!(
+            media_key(MediaAction::SeekBackward),
+            BrowserKey::MediaSeekBackward
+        );
+        assert_eq!(
+            media_key(MediaAction::SeekForward),
+            BrowserKey::MediaSeekForward
+        );
+        assert_eq!(
+            media_key(MediaAction::FullscreenToggle),
+            BrowserKey::MediaFullscreenToggle
+        );
     }
 }

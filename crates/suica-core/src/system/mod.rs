@@ -36,6 +36,10 @@ pub enum BrowserKey {
     Escape,
     HistoryBack,
     Backspace,
+    MediaPlayPause,
+    MediaSeekBackward,
+    MediaSeekForward,
+    MediaFullscreenToggle,
 }
 
 impl BrowserKey {
@@ -50,6 +54,10 @@ impl BrowserKey {
             Self::Escape => "Escape",
             Self::HistoryBack => "alt+Left",
             Self::Backspace => "BackSpace",
+            Self::MediaPlayPause => "k",
+            Self::MediaSeekBackward => "j",
+            Self::MediaSeekForward => "l",
+            Self::MediaFullscreenToggle => "f",
         }
     }
 }

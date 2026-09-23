@@ -89,6 +89,10 @@ GET /ws?role=remote|tv&protocolVersion=1
 - `input.text`
 - `input.delete_backward`
 - `input.submit`
+- `media.play_pause`
+- `media.seek_backward`
+- `media.seek_forward`
+- `media.fullscreen_toggle`
 
 モード切り替え:
 
@@ -118,6 +122,11 @@ CoreからChromiumへ直接入力される。
 ```
 
 `input.delete_backward`は1文字削除、`input.submit`はEnterキーによる検索実行を行う。
+
+メディア操作はRemoteロールかつ安定したTVモードで、ReactホームのTV接続がない外部ページに対してのみ受け付ける。
+`media.play_pause`、`media.seek_backward`、`media.seek_forward`、`media.fullscreen_toggle`はそれぞれ
+YouTube互換の固定キー `k`、`j`、`l`、`f` をChromiumへ送る。成功応答はキー配送の成功を表し、
+広告や非動画ページで再生状態が変化したことまでは保証しない。
 
 成功応答:
 
