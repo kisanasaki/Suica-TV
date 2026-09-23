@@ -18,6 +18,7 @@ final class RemoteViewModel {
 
     private var token: String?
     private var connectionTask: Task<Void, Never>?
+    private var connectionGeneration: UInt64 = 0
     private var pendingRequests: [UUID: PendingRequest] = [:]
     private var shouldReconnect = false
     private var connectedAt: Date?
@@ -66,11 +67,12 @@ final class RemoteViewModel {
             return
         }
         shouldReconnect = true
-        connectionTask = Task { await runConnectionLoop() }
+        startConnectionTask(disconnectFirst: false)
     }
 
     func stop() {
         shouldReconnect = false
+        connectionGeneration &+= 1
         connectionTask?.cancel()
         connectionTask = nil
         pendingRequests.values.forEach { $0.timeoutTask.cancel() }
@@ -216,10 +218,10 @@ final class RemoteViewModel {
         }
     }
 
-    private func runConnectionLoop() async {
+    private func runConnectionLoop(generation: UInt64) async {
         var attempt = 0
 
-        while shouldReconnect && !Task.isCancelled {
+        while isCurrentConnection(generation) && !Task.isCancelled {
             guard let token else {
                 connectionState = .disconnected
                 return
@@ -230,14 +232,17 @@ final class RemoteViewModel {
                 connectionState = attempt == 0 ? .connecting : .reconnecting(attempt: attempt)
                 let configuration = ConnectionConfiguration(host: validatedHost, port: port, token: token)
                 try await webSocket.connect(configuration: configuration)
+                guard isCurrentConnection(generation), !Task.isCancelled else { return }
                 let messages = await webSocket.messages()
                 for try await message in messages {
+                    guard isCurrentConnection(generation), !Task.isCancelled else { return }
                     try await handle(message)
                 }
                 if !Task.isCancelled { throw RemoteClientError.disconnected }
             } catch {
+                guard isCurrentConnection(generation), !Task.isCancelled else { return }
                 await webSocket.disconnect()
-                if Task.isCancelled || !shouldReconnect { return }
+                guard isCurrentConnection(generation), !Task.isCancelled else { return }
                 if isAuthenticationError(error) {
                     needsRepairing = true
                     connectionState = .failed(message: String(localized: "再ペアリングが必要です。"))
@@ -299,15 +304,30 @@ final class RemoteViewModel {
 
     private func restartConnection() {
         shouldReconnect = true
-        connectionTask?.cancel()
-        connectionTask = nil
         pendingRequests.values.forEach { $0.timeoutTask.cancel() }
         pendingRequests.removeAll()
-        Task {
-            await webSocket.disconnect()
-            guard shouldReconnect else { return }
-            connectionTask = Task { await runConnectionLoop() }
+        startConnectionTask(disconnectFirst: true)
+    }
+
+    private func startConnectionTask(disconnectFirst: Bool) {
+        connectionGeneration &+= 1
+        let generation = connectionGeneration
+        connectionTask?.cancel()
+        connectionTask = Task { [weak self] in
+            guard let self else { return }
+            if disconnectFirst {
+                await webSocket.disconnect()
+            }
+            guard isCurrentConnection(generation), !Task.isCancelled else { return }
+            await runConnectionLoop(generation: generation)
+            if connectionGeneration == generation {
+                connectionTask = nil
+            }
         }
+    }
+
+    private func isCurrentConnection(_ generation: UInt64) -> Bool {
+        shouldReconnect && connectionGeneration == generation
     }
 
     private func requestTimedOut(_ requestId: UUID) {

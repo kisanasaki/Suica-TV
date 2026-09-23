@@ -18,6 +18,30 @@ actor FakeWebSocketClient: WebSocketClientProtocol {
     func sentCount() -> Int { sentCommands.count }
 }
 
+actor DelayedWebSocketClient: WebSocketClientProtocol {
+    private(set) var connectCount = 0
+    private(set) var disconnectCount = 0
+
+    func connect(configuration: ConnectionConfiguration) async throws {
+        connectCount += 1
+    }
+
+    func disconnect() async {
+        disconnectCount += 1
+        try? await Task.sleep(for: .milliseconds(20))
+    }
+
+    func send(_ command: RemoteCommand) async throws { }
+
+    func messages() -> AsyncThrowingStream<ServerMessage, Error> {
+        AsyncThrowingStream { _ in }
+    }
+
+    func counts() -> (connects: Int, disconnects: Int) {
+        (connectCount, disconnectCount)
+    }
+}
+
 final class MemoryKeychain: KeychainStoreProtocol, @unchecked Sendable {
     var token: String?
     init(token: String? = "test-token") { self.token = token }
@@ -102,6 +126,42 @@ final class RemoteViewModelTests: XCTestCase {
         XCTAssertEqual(sentCount, 0)
         XCTAssertNotNil(viewModel.alertMessage)
         viewModel.stop()
+    }
+
+    func testRapidReconnectRequestsCreateOnlyLatestConnectionLoop() async throws {
+        let client = DelayedWebSocketClient()
+        let viewModel = RemoteViewModel(
+            webSocket: client,
+            pairingService: UnusedPairingService(),
+            keychain: MemoryKeychain(),
+            settingsStore: FixedSettingsStore()
+        )
+
+        viewModel.retry()
+        viewModel.retry()
+        viewModel.retry()
+        try await Task.sleep(for: .milliseconds(100))
+
+        let counts = await client.counts()
+        XCTAssertEqual(counts.connects, 1)
+        viewModel.stop()
+    }
+
+    func testStopInvalidatesReconnectWaitingForDisconnect() async throws {
+        let client = DelayedWebSocketClient()
+        let viewModel = RemoteViewModel(
+            webSocket: client,
+            pairingService: UnusedPairingService(),
+            keychain: MemoryKeychain(),
+            settingsStore: FixedSettingsStore()
+        )
+
+        viewModel.retry()
+        viewModel.stop()
+        try await Task.sleep(for: .milliseconds(100))
+
+        let counts = await client.counts()
+        XCTAssertEqual(counts.connects, 0)
     }
 
     private func makeViewModel(client: FakeWebSocketClient) -> RemoteViewModel {
