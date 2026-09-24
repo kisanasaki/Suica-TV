@@ -10,6 +10,7 @@ Raspberry Pi 5を家庭用テレビへ接続し、iPhoneから操作するテレ
 - [Raspberry Piセットアップ手順](docs/setup-raspberry-pi.md)
 - [Remote API契約](contracts/remote-api.md)
 - [Raspberry Pi性能・長時間稼働試験](docs/performance-testing.md)
+- [UxPlay AirPlay実機検証](docs/uxplay-validation.md)
 
 ## Reactテレビ画面
 
