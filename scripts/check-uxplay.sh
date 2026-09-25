@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# UxPlay運用に必要なbinary、GStreamer plugin、sink、mDNS、portを診断する。
+# 環境は変更せず、必須項目が欠けている場合だけ非zeroで終了する。
+
 set -u
 
 failures=0

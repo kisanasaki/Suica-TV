@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# TV frontendとCoreを検証・buildし、user-localな配置とsystemd unitを準備する。
+# 既存設定は上書きせず、serviceの有効化は利用者の明示操作に残す。
+
 set -euo pipefail
 
 repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

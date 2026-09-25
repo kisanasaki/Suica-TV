@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Raspberry Pi上の温度・負荷・メモリ・主要process・health応答を定期採取する。
+# CSV、実行環境metadata、JSON summaryを指定directoryへ出力し、system設定は変更しない。
+
 set -eu
 
 duration_seconds=3600
