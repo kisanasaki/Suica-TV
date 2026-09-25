@@ -1,3 +1,8 @@
+//! 表示モードとブラウザ入力をOS固有処理へ変換する。
+//!
+//! 上位層にはSystemBackendとして抽象化し、Windows等ではシミュレーション、
+//! Raspberry Pi OSでは管理対象Chromiumと入力補助コマンドだけを操作する。
+
 use crate::{
     config::{Config, SystemBackendKind},
     error::CoreError,
@@ -8,6 +13,9 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 
 #[async_trait]
+/// 表示モードとブラウザ入力をOS実装から分離する境界。
+///
+/// 実装は管理対象外のプロセスを終了せず、成功時だけ要求された操作がOSへ配送されたとみなす。
 pub trait SystemBackend: Send + Sync {
     async fn reconcile(&self) -> Result<DisplayMode, CoreError>;
     async fn start_tv(&self) -> Result<(), CoreError>;
@@ -102,6 +110,7 @@ impl SystemBackend for SimulatedSystemBackend {
     }
 }
 
+/// 設定と実行OSに応じて実バックエンドまたはシミュレーターを選択する。
 pub async fn create_system_backend(config: &Config) -> Result<Arc<dyn SystemBackend>, CoreError> {
     match config.system_backend {
         SystemBackendKind::Simulated => Ok(Arc::new(SimulatedSystemBackend::new())),

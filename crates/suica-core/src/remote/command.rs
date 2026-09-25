@@ -1,3 +1,8 @@
+//! クライアントから届くremote.commandを型安全な操作へ変換する。
+//!
+//! 未知フィールド、不要なparams、過大な移動量、制御文字を拒否し、
+//! OS層へ任意コマンドや未検証文字列が渡らないようにする。
+
 use crate::{error::CoreError, mode::DisplayMode};
 use serde::Deserialize;
 use uuid::Uuid;
@@ -73,6 +78,9 @@ struct ParamsDto {
 }
 
 impl RemoteCommand {
+    /// JSONを検証済みの操作へ変換する。
+    ///
+    /// actionごとに許可するparamsを限定し、余分な値も互換入力として黙認しない。
     pub fn parse(text: &str) -> Result<Self, CoreError> {
         let dto: CommandDto = serde_json::from_str(text).map_err(|_| CoreError::InvalidMessage)?;
         if dto.kind != "remote.command" {

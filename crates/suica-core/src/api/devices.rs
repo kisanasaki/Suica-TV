@@ -1,3 +1,8 @@
+//! TV本体から登録端末を確認・失効するHTTP APIを提供する。
+//!
+//! 管理操作はループバック接続だけに限定し、失効の永続化が成功した後で
+//! 対象端末の既存WebSocket接続を切断する。
+
 use crate::{
     error::CoreError,
     pairing::PairedDevice,

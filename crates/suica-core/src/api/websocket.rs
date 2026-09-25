@@ -1,3 +1,8 @@
+//! Remote/TVクライアントのWebSocket接続とコマンド配送を管理する。
+//!
+//! 接続時のロール認証、server.hello、Keepalive、重複要求の抑止、
+//! ReactまたはOS入力への配送を担当し、表示遷移そのものはModeManagerへ委譲する。
+
 use crate::{
     error::CoreError,
     mode::DisplayMode,
@@ -30,6 +35,7 @@ pub struct WsQuery {
     protocol_version: u8,
 }
 
+/// 接続元、プロトコル、ロール、Bearer tokenを検証してWebSocketへ昇格する。
 pub async fn upgrade(
     State(state): State<AppState>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
@@ -160,6 +166,7 @@ async fn process_command(
     command: RemoteCommand,
     out: mpsc::Sender<ServerMessage>,
 ) {
+    // 結果キャッシュは成功・失敗の両方を保持し、再送で副作用を繰り返さない。
     match state.requests.begin(command.request_id).await {
         RequestDecision::Cached(cached) => {
             let _ = out.send(cached).await;
@@ -230,6 +237,7 @@ async fn dispatch(
         }
         RemoteAction::Media(action) => {
             ensure_remote_stable_tv_mode(state, role).await?;
+            // TV接続がある間はReactホーム上なので、検索欄などへの誤入力を防ぐ。
             if state.clients.has_tv().await {
                 return Err(CoreError::InvalidState);
             }

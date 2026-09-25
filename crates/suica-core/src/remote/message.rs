@@ -1,3 +1,8 @@
+//! Coreからクライアントへ送るWebSocketメッセージを定義する。
+//!
+//! すべての送信箇所で同じcamelCase形式と安全なエラー本文を使うため、
+//! JSON生成をServerMessageへ集約する。
+
 use crate::mode::DisplayMode;
 use chrono::{DateTime, Utc};
 use serde::Serialize;

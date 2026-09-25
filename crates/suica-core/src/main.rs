@@ -1,3 +1,8 @@
+//! Suica Coreプロセスのエントリーポイント。
+//!
+//! 設定の読込、状態初期化、HTTPサーバー起動、Chromium監視、
+//! 終了通知を統括し、ドメイン処理はライブラリ側へ委譲する。
+
 use std::{env, path::PathBuf, time::Duration};
 use suica_core::{api::websocket, build_router, build_state, config::Config, error::CoreError};
 use tokio::signal;

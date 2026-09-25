@@ -1,3 +1,7 @@
+//! 登録端末管理APIのループバック制限と端末単位の失効を検証する。
+//!
+//! HTTP応答だけでなく、対象トークンが無効化され、他端末が維持されることを回帰対象とする。
+
 use axum::{
     body::{Body, to_bytes},
     extract::ConnectInfo,

@@ -1,3 +1,8 @@
+//! 6桁コードによる端末ペアリングHTTP APIを提供する。
+//!
+//! 端末名と試行回数を検証し、成功時だけ一度限りの平文トークンを返す。
+//! トークンの保存方式はTokenStoreへ委譲する。
+
 use crate::{error::CoreError, pairing::valid_pairing_code, state::AppState};
 use axum::{
     Json,

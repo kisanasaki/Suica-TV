@@ -1,3 +1,8 @@
+//! ペアリングトークンの発行、検証、失効、永続化を管理する。
+//!
+//! 平文トークンは発行時だけ返し、保存時はハッシュ化する。
+//! 更新は一時ファイルを経由して、永続化失敗時にメモリ状態だけ進まないようにする。
+
 use crate::error::CoreError;
 use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
 use chrono::{DateTime, Utc};
@@ -36,6 +41,7 @@ pub struct TokenStore {
     records: RwLock<Vec<TokenRecord>>,
 }
 impl TokenStore {
+    /// 永続化済みのハッシュだけを読み込み、平文トークンをメモリへ復元しない。
     pub async fn load(path: PathBuf) -> Result<Self, CoreError> {
         let records = match tokio::fs::read(&path).await {
             Ok(bytes) => serde_json::from_slice(&bytes)?,
@@ -60,6 +66,7 @@ impl TokenStore {
             token_hash: hash(&token),
             created_at: Some(Utc::now()),
         });
+        // ファイル更新が成功してから公開状態を差し替え、失敗時は発行を無効に保つ。
         self.persist(&updated).await?;
         *records = updated;
         Ok((id, token))
@@ -95,6 +102,7 @@ impl TokenStore {
         }
         let mut updated = records.clone();
         updated.retain(|record| record.device_id != device_id);
+        // 失効も発行と同じ順序で行い、再起動後だけ状態が戻る事態を防ぐ。
         self.persist(&updated).await?;
         *records = updated;
         Ok(true)

@@ -1,3 +1,8 @@
+//! Suica Coreの構成要素を初期化し、HTTP/WebSocketルーターを組み立てる。
+//!
+//! 個別の認証、表示制御、メッセージ処理は各モジュールへ委譲し、
+//! このファイルは依存関係の接続と公開エンドポイントの定義だけを担当する。
+
 pub mod api;
 pub mod config;
 pub mod error;
@@ -28,6 +33,9 @@ use crate::{
     system::create_system_backend,
 };
 
+/// 検証済み設定から、共有状態とOSバックエンドを初期化する。
+///
+/// 起動時の実表示モードを照合できない場合は、不正な初期状態で配信を始めず失敗を返す。
 pub async fn build_state(config: Config) -> Result<AppState, CoreError> {
     let backend = create_system_backend(&config).await?;
     let mode_manager = Arc::new(ModeManager::with_timeout(backend, config.command_timeout).await?);
@@ -42,6 +50,7 @@ pub async fn build_state(config: Config) -> Result<AppState, CoreError> {
     })
 }
 
+/// CoreのAPIとTV静的ファイルを同一オリジンで配信するルーターを構築する。
 pub fn build_router(state: AppState) -> Router {
     let index = state.config.static_dir.join("index.html");
     let static_files =

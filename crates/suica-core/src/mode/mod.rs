@@ -1,3 +1,8 @@
+//! TV/PC表示モードの状態遷移と障害復旧を直列化する。
+//!
+//! Chromium操作全体を同じ遷移ロックで保護し、タイムアウトや異常終了後は
+//! SystemBackendの実状態を再照合して、報告状態とのずれを最小化する。
+
 use crate::{
     error::CoreError,
     system::{BrowserKey, SystemBackend},
@@ -43,6 +48,7 @@ pub struct ModeManager {
     transition_timeout: Duration,
 }
 impl ModeManager {
+    /// バックエンドの実状態を初期値としてModeManagerを構築する。
     pub async fn new(backend: Arc<dyn SystemBackend>) -> Result<Self, CoreError> {
         Self::with_timeout(backend, Duration::from_secs(10)).await
     }
@@ -95,6 +101,7 @@ impl ModeManager {
         target: DisplayMode,
         request_id: Uuid,
     ) -> Result<DisplayMode, CoreError> {
+        // try_lockにより、連打を待ち行列へ積まずBusyとして即時にクライアントへ返す。
         let _guard = self.transition.try_lock().map_err(|_| CoreError::Busy)?;
         self.switch_locked(target, request_id).await
     }
@@ -139,6 +146,7 @@ impl ModeManager {
     }
 
     async fn recover_after_failure(&self, last_stable: DisplayMode, reason: String) {
+        // 操作前の推測状態へ戻すのではなく、OS側を再照合して実状態を採用する。
         let reconciled = timeout(self.transition_timeout, self.backend.reconcile()).await;
         *self.state.write().await = match reconciled {
             Ok(Ok(mode)) => ModeState::Stable(mode),

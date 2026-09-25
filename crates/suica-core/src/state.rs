@@ -1,3 +1,8 @@
+//! Core全体で共有する接続、要求キャッシュ、レート制限の状態を管理する。
+//!
+//! ClientRegistryは接続数と端末単位の切断を、RequestCacheは同一requestIdの
+//! 二重実行防止を担当し、表示モードの実処理はModeManagerへ委譲する。
+
 use crate::{
     config::Config,
     error::CoreError,
@@ -56,8 +61,8 @@ impl ClientRegistry {
         if role == ClientRole::Remote && count >= 4 {
             return Err(CoreError::ForbiddenRole);
         }
-        // A home navigation restarts Chromium. Replace the stale TV connection so the
-        // newly loaded React application can reconnect without waiting for socket cleanup.
+        // ホーム復帰ではChromiumが再読込されるため、古いsocketの片付けを待たず
+        // 新しいReact画面を正規のTV接続として置き換える。
         if role == ClientRole::Tv {
             all.retain(|_, client| client.role != ClientRole::Tv);
         }
@@ -125,6 +130,7 @@ pub struct RequestCache {
 }
 impl RequestCache {
     pub async fn begin(&self, id: Uuid) -> RequestDecision {
+        // 同じrequestIdが実行中なら完了通知を待ち、OS操作の二重実行を防ぐ。
         loop {
             let notified = self.changed.notified();
             {
@@ -143,6 +149,7 @@ impl RequestCache {
     }
     pub async fn finish(&self, id: Uuid, msg: ServerMessage) {
         let mut inner = self.inner.lock().await;
+        // 長時間稼働でも再送キャッシュが無制限に増えないよう、最古の結果を破棄する。
         if inner.completed.len() >= 1000
             && let Some(old) = inner
                 .completed

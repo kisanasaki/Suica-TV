@@ -1,3 +1,8 @@
+//! Remote、Core、TV間の主要なWebSocket操作を一連の接続で検証する。
+//!
+//! Reactへの転送、外部ページ用OS入力、モード切替、ホーム復帰、
+//! TV再接続をまとめて確認し、層をまたぐ回帰を検出する。
+
 use futures_util::{SinkExt, StreamExt};
 use serde_json::{Value, json};
 use suica_core::{
