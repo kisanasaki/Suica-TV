@@ -1,3 +1,8 @@
+/**
+ * CoreClientのライフサイクルをReactへ接続し、受信イベントを画面用callbackへ配送する。
+ * hook破棄時にはsocketと再接続タイマーを必ず停止する。
+ */
+
 import { useEffect, useRef, useState } from 'react';
 import { CoreClient } from '../services/coreClient';
 import type { ServerMessage } from '../services/messages';
@@ -11,6 +16,7 @@ interface Options {
 }
 
 export function useRemoteCommands(options: Options) {
+  // clientを作り直さず、各renderの最新callbackだけを参照させる。
   const callbacks = useRef(options);
   callbacks.current = options;
   const [client] = useState(

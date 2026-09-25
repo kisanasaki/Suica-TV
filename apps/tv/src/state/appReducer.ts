@@ -1,3 +1,8 @@
+/**
+ * TV画面のページ、選択位置、Core接続、モード切替状態を純粋関数で更新する。
+ * メニュー座標を参照し、存在しない方向への移動では現在位置を維持する。
+ */
+
 import { INITIAL_MENU_ID, MENU_ITEMS } from '../config/menu';
 import type { AppAction, MenuItemId, NavigationAction, TvAppState } from './types';
 
@@ -30,6 +35,7 @@ function moveSelection(currentId: MenuItemId, direction: NavigationAction): Menu
   );
 }
 
+/** 副作用を起こさず、入力actionから次のTV画面状態だけを計算する。 */
 export function appReducer(state: TvAppState, action: AppAction): TvAppState {
   switch (action.type) {
     case 'navigate':

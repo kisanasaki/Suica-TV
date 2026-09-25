@@ -1,7 +1,14 @@
+/*
+ * TVホーム、設定画面、共通部品のレイアウトと状態表現を定義する。
+ * 1280x720のTV表示を基準に、小画面とreduced-motionへ段階的に対応する。
+ */
+
+/* 全画面共通のbox modelとdocument基盤。 */
 * { box-sizing: border-box; }
 html, body, #root { width: 100%; min-width: 320px; min-height: 100%; margin: 0; }
 body { min-height: 100vh; overflow: hidden; background: radial-gradient(circle at 18% -15%, #1b5c4d 0, var(--bg) 35%, var(--bg-deep) 76%); }
 button { font: inherit; }
+/* TVの安全領域を含むapp shellとstatus領域。 */
 .tv-shell { min-height: 100vh; display: grid; grid-template-rows: auto 1fr auto; gap: clamp(18px, 2.8vh, 34px); padding: clamp(34px, 5vh, 58px) clamp(54px, 5vw, 96px) clamp(24px, 3.5vh, 42px); position: relative; }
 .top-bar { display: flex; align-items: center; justify-content: space-between; min-height: 76px; }
 .brand { display: flex; align-items: center; gap: 18px; }
@@ -12,6 +19,7 @@ button { font: inherit; }
 .connection-badge__dot { width: 12px; height: 12px; border-radius: 50%; background: var(--warning); box-shadow: 0 0 16px currentColor; }
 .connection-badge--connected { color: var(--suica-green-bright); }
 .connection-badge--connected .connection-badge__dot { background: var(--suica-green); }
+/* Home menuとremote focusの視覚状態。 */
 .home-page { min-height: 0; display: flex; align-items: center; }
 .menu-grid { width: 100%; height: min(66vh, 680px); display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(0, 1fr)); gap: clamp(14px, 1.8vw, 26px); }
 .app-tile { min-width: 0; min-height: 0; border: 0; padding: 0; color: inherit; background: transparent; cursor: pointer; text-align: left; }
@@ -25,6 +33,7 @@ button { font: inherit; }
 .app-tile__copy { display: flex; flex-direction: column; gap: 8px; min-width: 0; padding-bottom: 5px; }
 .app-tile__copy strong { font-size: clamp(30px, 3vw, 48px); line-height: 1; letter-spacing: -.025em; }
 .app-tile__copy small { color: var(--text-muted); font-size: clamp(16px, 1.5vw, 24px); white-space: normal; }
+/* 設定画面のpanel、device一覧、pairing操作。 */
 .settings-page { align-self: center; width: min(100%, 1050px); margin: auto; padding: clamp(34px, 4vw, 62px); border: 1px solid #ffffff1c; border-radius: 34px; background: linear-gradient(145deg, #153b34e8, #0b2824e8); box-shadow: 0 24px 70px #0008; }
 .settings-page__heading { display: flex; align-items: center; justify-content: space-between; gap: 30px; margin-bottom: 34px; }
 .settings-page h2 { margin: 0; font-size: clamp(38px, 5vw, 70px); }
@@ -45,6 +54,7 @@ button { font: inherit; }
 .back-button:focus-visible { outline: 5px solid var(--suica-green-bright); outline-offset: 4px; }
 .error-toast { position: absolute; z-index: 10; top: 125px; left: 50%; transform: translateX(-50%); max-width: 80vw; padding: 16px 24px; border: 2px solid var(--error); border-radius: 16px; background: #481b1be8; color: #fff; font-size: 21px; font-weight: 700; box-shadow: 0 16px 38px #0008; }
 footer { display: flex; justify-content: center; gap: 34px; color: var(--text-muted); font-size: clamp(14px, 1.2vw, 19px); }
+/* 小型displayでも操作対象の大きさを保つための段階的調整。 */
 @media (max-width: 900px), (max-height: 760px) {
   .tv-shell { padding: 28px 48px 20px; gap: 16px; }
   .top-bar { min-height: 58px; }

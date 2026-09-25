@@ -1,3 +1,8 @@
+/**
+ * TVホームに表示する項目と二次元ナビゲーション座標を定義する。
+ * 外部URLはlauncher側の許可ホストと一致させる必要がある。
+ */
+
 import type { MenuItem } from '../state/types';
 
 export const MENU_ITEMS: readonly MenuItem[] = [

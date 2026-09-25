@@ -1,3 +1,7 @@
+/**
+ * 登録端末一覧、Remote操作による選択、二段階確認、解除後の表示更新を検証する。
+ */
+
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { NavigationAction } from '../state/types';

@@ -1,3 +1,8 @@
+/**
+ * TV WebSocketへ届いたRemote操作が、現在選択中のホーム項目を起動することを検証する。
+ * 実ネットワークを使わず、server.hello以降の接続成立条件も再現する。
+ */
+
 import { act, render } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';

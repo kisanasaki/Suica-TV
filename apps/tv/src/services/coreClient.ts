@@ -1,3 +1,8 @@
+/**
+ * Suica CoreとのTV用WebSocket接続、再接続、要求応答の対応付けを管理する。
+ * socketのopenではなくserver.hello受信後を接続完了として扱う。
+ */
+
 import { parseServerMessage, type ServerMessage } from './messages';
 import type { ConnectionStatus, DisplayMode } from '../state/types';
 
@@ -14,12 +19,14 @@ interface PendingRequest {
   timeout: number;
 }
 
+/** 明示設定がなければ、TV画面と同一オリジンのCoreへ接続するURLを返す。 */
 export function getCoreWebSocketUrl() {
   if (import.meta.env.VITE_CORE_WS_URL) return import.meta.env.VITE_CORE_WS_URL;
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   return `${protocol}//${window.location.host}/ws?role=tv&protocolVersion=1`;
 }
 
+/** TVロールの接続を一つだけ所有し、再接続と要求の完了通知を管理する。 */
 export class CoreClient {
   private socket?: WebSocket;
   private reconnectTimer?: number;
@@ -94,6 +101,7 @@ export class CoreClient {
         return;
       }
       if (!handshakeComplete) {
+        // openイベントだけではCore側のTV登録成功を確認できないため、helloを必須にする。
         if (message.type !== 'server.hello' || message.protocolVersion !== 1 || message.role !== 'tv') {
           socket.close(1002, 'invalid server handshake');
           return;
@@ -107,6 +115,7 @@ export class CoreClient {
     });
     socket.addEventListener('error', () => socket.close());
     socket.addEventListener('close', () => {
+      // 再接続後に遅れて届いた旧socketのcloseで、新しい接続を壊さない。
       if (socket !== this.socket || this.stopped) return;
       this.socket = undefined;
       this.options.onStatus('reconnecting');

@@ -1,3 +1,8 @@
+/**
+ * VitestへDOM matcherと副作用のないWebSocket既定実装を設定する。
+ * 各テストは必要に応じて接続時系列を制御できるFakeへ差し替える。
+ */
+
 import '@testing-library/jest-dom/vitest';
 
 class PassiveWebSocket extends EventTarget {

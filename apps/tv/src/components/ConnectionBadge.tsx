@@ -1,3 +1,8 @@
+/**
+ * Coreとの接続状態を、TVから判別できるラベルと色で表示する。
+ * 接続判定そのものはCoreClientとuseRemoteCommandsが担当する。
+ */
+
 import type { ConnectionStatus } from '../state/types';
 
 const STATUS_LABELS: Record<ConnectionStatus, string> = {

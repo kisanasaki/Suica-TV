@@ -1,3 +1,8 @@
+/**
+ * CoreClientのhandshake、要求完了、切断、再接続、古いsocketの無効化を検証する。
+ * FakeWebSocketで時系列を制御し、実ネットワーク由来の揺らぎを排除する。
+ */
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CoreClient } from './coreClient';
 

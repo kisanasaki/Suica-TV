@@ -1,3 +1,7 @@
+/**
+ * 登録端末APIのURL、HTTP method、正常応答、エラー本文の伝播を検証する。
+ */
+
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { listPairedDevices, revokePairedDevice } from './devices';
 

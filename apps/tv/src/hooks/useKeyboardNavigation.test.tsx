@@ -1,3 +1,7 @@
+/**
+ * キー入力からNavigationActionへの対応と、長押しEnterの多重決定防止を検証する。
+ */
+
 import { render } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';

@@ -1,3 +1,7 @@
+/**
+ * 外部URLのHTTPS制約、ホスト許可リスト、メニュー設定との整合性を検証する。
+ */
+
 import { describe, expect, it, vi } from 'vitest';
 import { launchExternalUrl } from './launcher';
 

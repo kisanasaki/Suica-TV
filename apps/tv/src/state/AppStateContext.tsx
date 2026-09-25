@@ -1,3 +1,8 @@
+/**
+ * TV画面の状態とdispatchをReact Contextで子要素へ提供する。
+ * 状態遷移規則はappReducerへ集約し、Context自体には業務判断を置かない。
+ */
+
 import { createContext, useContext, useReducer, type Dispatch, type ReactNode } from 'react';
 import { appReducer, initialState } from './appReducer';
 import type { AppAction, TvAppState } from './types';

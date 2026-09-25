@@ -1,3 +1,8 @@
+/**
+ * TV画面で共有する状態、メニュー、NavigationActionの型契約を定義する。
+ * Wire上の文字列はRemote API v1と一致させる。
+ */
+
 export type PageId = 'home' | 'settings';
 export type DisplayMode = 'tv' | 'pc';
 export type ConnectionStatus =

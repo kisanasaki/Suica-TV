@@ -1,3 +1,8 @@
+/**
+ * Coreから受信するWebSocketメッセージの型と実行時検証を定義する。
+ * JSON.parse成功だけでは信用せず、message種別ごとの必須値を確認する。
+ */
+
 import type { DisplayMode, NavigationAction } from '../state/types';
 
 export interface ServerHelloMessage {
@@ -78,6 +83,7 @@ function isErrorBody(value: unknown): value is ErrorMessage['error'] {
     && (value.retryable === undefined || typeof value.retryable === 'boolean');
 }
 
+/** 未知または不完全なJSONを、アプリケーション状態へ到達させずundefinedで拒否する。 */
 export function parseServerMessage(value: string): ServerMessage | undefined {
   let candidate: unknown;
   try {

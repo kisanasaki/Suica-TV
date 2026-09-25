@@ -1,3 +1,7 @@
+/**
+ * ホーム項目の表示、選択状態、Core切断時の無効化範囲を検証する。
+ */
+
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';

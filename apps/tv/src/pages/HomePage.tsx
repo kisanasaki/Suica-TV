@@ -1,3 +1,8 @@
+/**
+ * 設定されたメニューをTV向けグリッドとして表示する。
+ * Coreが必要な項目だけ接続状態に応じて無効化し、選択処理はAppへ返す。
+ */
+
 import { AppTile } from '../components/AppTile';
 import { MENU_ITEMS } from '../config/menu';
 import type { MenuItemId } from '../state/types';

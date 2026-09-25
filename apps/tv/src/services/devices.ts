@@ -1,3 +1,8 @@
+/**
+ * ループバック限定の登録端末管理HTTP APIをTV画面から利用する。
+ * APIエラー本文を利用者向けメッセージへ変換し、UIへHTTP詳細を漏らさない。
+ */
+
 export interface PairedDevice {
   deviceId: string;
   deviceName: string;
@@ -17,6 +22,7 @@ async function errorMessage(response: Response): Promise<string> {
   }
 }
 
+/** Coreと同じ端末から登録端末一覧を取得する。 */
 export async function listPairedDevices(signal?: AbortSignal): Promise<PairedDevice[]> {
   const response = await fetch('/api/v1/devices', { signal });
   if (!response.ok) throw new Error(await errorMessage(response));
@@ -24,6 +30,7 @@ export async function listPairedDevices(signal?: AbortSignal): Promise<PairedDev
   return body.devices;
 }
 
+/** 指定端末を失効し、再ペアリングが必要な状態にする。 */
 export async function revokePairedDevice(deviceId: string): Promise<void> {
   const response = await fetch(`/api/v1/devices/${encodeURIComponent(deviceId)}`, {
     method: 'DELETE',

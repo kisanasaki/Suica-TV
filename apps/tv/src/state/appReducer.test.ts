@@ -1,3 +1,7 @@
+/**
+ * メニュー境界、ページ復帰、接続・モード状態のReducer遷移を検証する。
+ */
+
 import { describe, expect, it } from 'vitest';
 import { appReducer, initialState } from './appReducer';
 

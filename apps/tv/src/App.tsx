@@ -1,3 +1,9 @@
+/**
+ * Suica TV画面のルート構成と、キーボード・Remote操作の配送を管理する。
+ *
+ * 画面状態はAppStateContext、通信はCoreClient、個別表示はpagesへ委譲する。
+ */
+
 import { useCallback, useEffect, useRef } from 'react';
 import { ConnectionBadge } from './components/ConnectionBadge';
 import { MENU_ITEMS } from './config/menu';

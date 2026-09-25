@@ -1,3 +1,7 @@
+/**
+ * WebSocketメッセージの正常系と、欠落・型違い・未知値の拒否を検証する。
+ */
+
 import { describe, expect, it } from 'vitest';
 import { parseServerMessage } from './messages';
 

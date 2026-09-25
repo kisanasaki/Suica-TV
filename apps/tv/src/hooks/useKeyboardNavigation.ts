@@ -1,3 +1,8 @@
+/**
+ * 物理キーボード操作をRemote APIと同じNavigationActionへ正規化する。
+ * ブラウザ既定動作を抑止し、UI側に入力経路の違いを持ち込まない。
+ */
+
 import { useEffect } from 'react';
 import type { NavigationAction } from '../state/types';
 

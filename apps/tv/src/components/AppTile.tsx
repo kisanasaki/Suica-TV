@@ -1,3 +1,8 @@
+/**
+ * ホーム画面の1項目を、フォーカス・無効・処理中状態付きで表示する。
+ * 選択後の処理は親へ通知し、この部品ではURLやシステム操作を実行しない。
+ */
+
 import { FocusFrame } from './FocusFrame';
 import type { MenuItem } from '../state/types';
 

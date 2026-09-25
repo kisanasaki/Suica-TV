@@ -1,3 +1,8 @@
+/**
+ * Core状態と登録端末を表示し、TV上から端末単位のペアリング解除を行う。
+ * 誤操作を防ぐため、解除は同じ端末を二度選択した場合だけ実行する。
+ */
+
 import { useCallback, useEffect, useState } from 'react';
 import { ConnectionBadge } from '../components/ConnectionBadge';
 import { listPairedDevices, revokePairedDevice, type PairedDevice } from '../services/devices';
@@ -30,11 +35,13 @@ export function SettingsPage({ connection, mode, onBack, registerNavigationHandl
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
       });
+    // 画面離脱後に完了したfetchが、破棄済みcomponentの状態を更新しないよう中断する。
     return () => controller.abort();
   }, []);
 
   const requestRevoke = useCallback(async (device: PairedDevice) => {
     if (working) return;
+    // 最初の決定は確認表示だけに使い、同じ端末への二度目の決定で失効する。
     if (confirmDeviceId !== device.deviceId) {
       setConfirmDeviceId(device.deviceId);
       setError(undefined);
