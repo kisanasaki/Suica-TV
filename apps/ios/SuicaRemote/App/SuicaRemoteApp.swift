@@ -1,3 +1,8 @@
+//
+// Suica Remoteアプリケーションのエントリーポイント。
+// 共有ViewModelを生成し、最上位のRemoteViewへ注入する。
+//
+
 import SwiftUI
 
 @main

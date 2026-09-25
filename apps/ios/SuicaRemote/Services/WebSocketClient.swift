@@ -1,3 +1,8 @@
+//
+// URLSessionWebSocketTaskをactor内で所有し、送受信と切断を直列化する。
+// UI状態や再接続方針は持たず、transportの成功・失敗だけを呼び出し側へ返す。
+//
+
 import Foundation
 
 enum RemoteClientError: LocalizedError, Equatable, Sendable {
@@ -21,6 +26,7 @@ enum RemoteClientError: LocalizedError, Equatable, Sendable {
     }
 }
 
+/// ViewModelからWebSocket transportの実装詳細を隔離する非同期境界。
 protocol WebSocketClientProtocol: Sendable {
     func connect(configuration: ConnectionConfiguration) async throws
     func disconnect() async
@@ -28,6 +34,7 @@ protocol WebSocketClientProtocol: Sendable {
     func messages() async -> AsyncThrowingStream<ServerMessage, Error>
 }
 
+/// 単一socketとreceive taskへのアクセスをactor isolationで直列化する。
 actor WebSocketClient: WebSocketClientProtocol {
     private let session: URLSession
     private let encoder = JSONEncoder()

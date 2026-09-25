@@ -1,3 +1,8 @@
+//
+// RemoteViewModelの接続、送信、再接続、古い非同期処理の無効化を検証する。
+// actorとin-memory実装で時系列を制御し、実ネットワークとKeychainへ依存しない。
+//
+
 import XCTest
 @testable import SuicaRemote
 

@@ -1,7 +1,13 @@
+//
+// Remote画面の接続、ペアリング、コマンド送信、再接続状態を統括する。
+// generationを使って古い非同期処理を無効化し、新しい接続を旧処理が上書きしないようにする。
+//
+
 import Foundation
 import Observation
 import UIKit
 
+/// Remote画面の唯一の状態所有者。UI更新をMainActor上へ集約する。
 @MainActor
 @Observable
 final class RemoteViewModel {
@@ -18,6 +24,7 @@ final class RemoteViewModel {
 
     private var token: String?
     private var connectionTask: Task<Void, Never>?
+    // 接続を開始するたびに更新し、旧Taskがawait後に状態を書き戻すのを防ぐ。
     private var connectionGeneration: UInt64 = 0
     private var pendingRequests: [UUID: PendingRequest] = [:]
     private var shouldReconnect = false
@@ -81,6 +88,7 @@ final class RemoteViewModel {
 
     func stop() {
         shouldReconnect = false
+        // cancelだけでは既に再開済みの処理を止めきれないため、世代も無効化する。
         connectionGeneration &+= 1
         connectionTask?.cancel()
         connectionTask = nil
@@ -183,6 +191,7 @@ final class RemoteViewModel {
 
     func queueScroll(dx: Int, dy: Int) {
         guard canUsePointer else { return }
+        // 高頻度gestureを75ms単位で集約し、送信量と操作遅延の釣り合いを取る。
         pendingScrollX = max(-1200, min(1200, pendingScrollX + dx))
         pendingScrollY = max(-1200, min(1200, pendingScrollY + dy))
         guard scrollTask == nil else { return }
@@ -210,6 +219,7 @@ final class RemoteViewModel {
 
     func queuePointerMove(dx: Int, dy: Int) {
         guard canUsePointer else { return }
+        // 連続座標を短時間だけ蓄積し、WebSocketを細かな移動eventで飽和させない。
         pendingPointerX = max(-1200, min(1200, pendingPointerX + dx))
         pendingPointerY = max(-1200, min(1200, pendingPointerY + dy))
         guard pointerTask == nil else { return }
@@ -279,6 +289,7 @@ final class RemoteViewModel {
                 self?.requestTimedOut(command.requestId)
             } catch { }
         }
+        // send完了直後にresultが届いても取りこぼさないよう、送信前に追跡を開始する。
         pendingRequests[command.requestId] = PendingRequest(
             isModeSwitch: isModeSwitch,
             timeoutTask: timeoutTask
@@ -297,6 +308,7 @@ final class RemoteViewModel {
     private func runConnectionLoop(generation: UInt64) async {
         var attempt = 0
 
+        // 各await境界で世代を確認し、再設定前の接続処理が現状態を上書きしないようにする。
         while isCurrentConnection(generation) && !Task.isCancelled {
             guard let token else {
                 connectionState = .disconnected
@@ -319,6 +331,7 @@ final class RemoteViewModel {
                 guard isCurrentConnection(generation), !Task.isCancelled else { return }
                 await webSocket.disconnect()
                 guard isCurrentConnection(generation), !Task.isCancelled else { return }
+                // 認証・protocol不一致は再試行で解消しないため、利用者の操作を待つ。
                 if isAuthenticationError(error) {
                     needsRepairing = true
                     connectionState = .failed(message: String(localized: "再ペアリングが必要です。"))
@@ -329,6 +342,7 @@ final class RemoteViewModel {
                     connectionState = .failed(message: RemoteClientError.protocolMismatch.localizedDescription)
                     return
                 }
+                // 30秒以上安定した接続は一時障害から回復したとみなし、backoffを初期化する。
                 if let connectedAt, Date().timeIntervalSince(connectedAt) >= 30 {
                     attempt = 0
                 }

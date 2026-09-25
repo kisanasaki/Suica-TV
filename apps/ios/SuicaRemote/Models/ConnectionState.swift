@@ -1,5 +1,11 @@
+//
+// Remote画面へ公開する接続状態と表示用属性を定義する。
+// URLSessionWebSocketTaskの詳細をUIへ漏らさず、利用者が判断できる状態へ正規化する。
+//
+
 import Foundation
 
+/// transportの状態を、UI表示と操作可否に必要な粒度へ変換した状態。
 enum ConnectionState: Equatable, Sendable {
     case disconnected
     case connecting

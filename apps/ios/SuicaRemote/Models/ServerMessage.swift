@@ -1,3 +1,8 @@
+//
+// Suica Coreから受信するserver messageを型安全にdecodeする。
+// 未知messageは互換性のため保持しつつ、既知messageの必須値は厳密に検証する。
+//
+
 import Foundation
 
 struct ServerError: Codable, Equatable, Sendable {
@@ -6,6 +11,7 @@ struct ServerError: Codable, Equatable, Sendable {
     let retryable: Bool
 }
 
+/// Coreから届くmessageの判別共用体。未知typeは接続を切らずに保持する。
 enum ServerMessage: Decodable, Equatable, Sendable {
     case hello(protocolVersion: Int, serverVersion: String, connectionId: UUID, role: String)
     case systemState(mode: DisplayMode, transitioning: Bool, targetMode: DisplayMode?, changedAt: Date)

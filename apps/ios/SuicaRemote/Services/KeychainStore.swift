@@ -1,6 +1,12 @@
+//
+// ペアリングトークンをiOS Keychainへ保存・読込・削除する。
+// UserDefaultsやログへ平文トークンを渡さず、Security frameworkの状態値をエラーへ変換する。
+//
+
 import Foundation
 import Security
 
+/// ペアリングトークンの安全な永続化境界。
 protocol KeychainStoreProtocol: Sendable {
     func readToken() throws -> String?
     func saveToken(_ token: String) throws
@@ -18,6 +24,7 @@ enum KeychainError: LocalizedError {
     }
 }
 
+/// 端末外へ同期されないKeychain itemとしてトークンを保存する既定実装。
 struct KeychainStore: KeychainStoreProtocol {
     private let service = "com.kisanasaki.SuicaRemote"
     private let account = "pairing-token"

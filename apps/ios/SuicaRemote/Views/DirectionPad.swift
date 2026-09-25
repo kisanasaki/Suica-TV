@@ -1,3 +1,8 @@
+//
+// 上下左右と決定操作をTVリモコン形式で表示するSwiftUI部品。
+// 触覚feedbackを付与し、具体的なコマンド送信は親Viewへ通知する。
+//
+
 import SwiftUI
 import UIKit
 

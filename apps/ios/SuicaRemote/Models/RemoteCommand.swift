@@ -1,5 +1,11 @@
+//
+// Suica Core Remote API v1へ送るコマンドとparamsを定義する。
+// rawValueとJSON fieldはWire契約のため、Core側と互換性を維持する。
+//
+
 import Foundation
 
+/// Coreと共有する表示モード。rawValueはWire契約の一部である。
 enum DisplayMode: String, Codable, CaseIterable, Sendable {
     case tv
     case pc
@@ -12,6 +18,7 @@ enum DisplayMode: String, Codable, CaseIterable, Sendable {
     }
 }
 
+/// Remote API v1で受け付ける操作名。rawValueの変更は後方互換性を壊す。
 enum RemoteAction: String, Codable, CaseIterable, Sendable {
     case up = "navigation.up"
     case down = "navigation.down"
@@ -72,6 +79,7 @@ struct CommandParams: Encodable, Equatable, Sendable {
     }
 }
 
+/// 1回のremote.command要求。requestIdで非同期の結果と対応付ける。
 struct RemoteCommand: Encodable, Equatable, Sendable {
     let type = "remote.command"
     let requestId: UUID

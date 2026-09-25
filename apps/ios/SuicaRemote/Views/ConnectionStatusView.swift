@@ -1,3 +1,8 @@
+//
+// 接続状態を色、アイコン、ラベルで表示する小さなSwiftUI部品。
+// 状態判定や再接続処理は行わず、ConnectionStateの表示属性だけを利用する。
+//
+
 import SwiftUI
 
 @MainActor

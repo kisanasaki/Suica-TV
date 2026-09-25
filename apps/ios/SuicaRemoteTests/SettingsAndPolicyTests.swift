@@ -1,3 +1,7 @@
+//
+// 接続設定の検証・保存と、再接続backoffの境界値を検証する。
+//
+
 import XCTest
 @testable import SuicaRemote
 

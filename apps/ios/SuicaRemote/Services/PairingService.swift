@@ -1,3 +1,8 @@
+//
+// 6桁コードと端末名をCoreのペアリングAPIへ送信する。
+// HTTP処理とdecodeだけを担当し、取得したトークンの保存はViewModelへ委譲する。
+//
+
 import Foundation
 
 struct PairingResponse: Decodable, Equatable, Sendable {
@@ -5,10 +10,12 @@ struct PairingResponse: Decodable, Equatable, Sendable {
     let token: String
 }
 
+/// CoreのペアリングHTTP APIを呼び出す境界。
 protocol PairingServiceProtocol: Sendable {
     func pair(configuration: ConnectionConfiguration, code: String, deviceName: String) async throws -> PairingResponse
 }
 
+/// HTTP statusとresponse bodyをアプリ共通のエラーへ変換する実装。
 struct PairingService: PairingServiceProtocol {
     private struct RequestBody: Encodable {
         let code: String

@@ -1,5 +1,11 @@
+//
+// WebSocket再接続の指数的backoffと上限を計算する。
+// 待機方法や接続状態は持たず、試行回数からdelayだけを返す。
+//
+
 import Foundation
 
+/// 連続失敗時の待機時間を上限付き指数backoffとして提供する。
 struct ReconnectPolicy: Sendable {
     private let delays: [TimeInterval]
 

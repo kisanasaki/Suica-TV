@@ -1,5 +1,12 @@
+//
+// Core接続先の設定、入力検証、UserDefaultsへの保存を管理する。
+// 秘密情報であるペアリングトークンは扱わず、KeychainStoreへ分離する。
+//
+
 import Foundation
 
+/// Core APIの接続先を表し、用途別のURLを一貫した規則で組み立てる。
+/// トークンはWebSocket認証だけに利用し、ペアリングURLには含めない。
 struct ConnectionConfiguration: Equatable, Sendable {
     let host: String
     let port: Int
@@ -42,6 +49,7 @@ enum SettingsValidationError: LocalizedError, Equatable {
     }
 }
 
+/// URL生成前にユーザー入力を正規化し、解釈が曖昧なhost・port・codeを拒否する。
 enum SettingsValidator {
     static func validatedHost(_ value: String) throws -> String {
         let host = value.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -91,12 +99,14 @@ enum SettingsValidator {
     }
 }
 
+/// 接続先設定の永続化境界。秘密情報はこの境界では扱わない。
 protocol AppSettingsStoreProtocol: Sendable {
     func loadHost() -> String
     func loadPort() -> Int
     func save(host: String, port: Int)
 }
 
+/// hostとportをUserDefaultsへ保存する既定実装。
 struct AppSettingsStore: AppSettingsStoreProtocol, @unchecked Sendable {
     private let defaults: UserDefaults
     private let hostKey = "suicaRemote.host"

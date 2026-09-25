@@ -1,3 +1,8 @@
+//
+// Remote API v1のJSON encode/decodeとenum値の互換性を検証する。
+// CoreとのWire契約が意図せず変わる回帰を検出する。
+//
+
 import XCTest
 @testable import SuicaRemote
 
